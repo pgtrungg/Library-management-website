@@ -6,7 +6,7 @@ let SignUp = () => {
     const navigate = useNavigate();
 
     const [formData, setFormData] = useState({
-        name: "",
+        username: "",
         email: "",
         password: "",
         confirmPassword: "",
@@ -21,8 +21,8 @@ let SignUp = () => {
         let isValid = true;
 
         // Name validation
-        if (!formData.name) {
-            errors.name = "Name is required";
+        if (!formData.username) {
+            errors.username = "Username is required";
             isValid = false;
         }
 
@@ -61,6 +61,7 @@ let SignUp = () => {
         if (!validateForm()) {
             return;
         }
+        console.log(formData);
 
         // Send form data to the server
         try {
@@ -94,20 +95,19 @@ let SignUp = () => {
                             <form className="space-y-4 md:space-y-6" onSubmit={handleSubmit} action={""}>
                                 {/* Name field */}
                                 <div>
-                                    <label htmlFor="name"
-                                           className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Your
-                                        name</label>
+                                    <label htmlFor="username"
+                                           className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Username</label>
                                     <input
                                         type="text"
-                                        name="name"
-                                        id="name"
-                                        value={formData.name}
-                                        onChange={(e) => setFormData({...formData, name: e.target.value})}
+                                        name="username"
+                                        id="username"
+                                        value={formData.username}
+                                        onChange={(e) => setFormData({...formData, username: e.target.value})}
                                         className="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                                        placeholder="Your name"
+                                        placeholder="Username"
                                         required=""
                                     />
-                                    {errors.name && <span className="text-red-500">{errors.name}</span>}
+                                    {errors.username && <span className="text-red-500">{errors.username}</span>}
                                 </div>
                                 {/* Email field */}
                                 <div>

@@ -14,7 +14,7 @@ function NavBar() {
 
     let logOutUser = () => {
         try {
-            axios.post('user/logout')
+            axios.post('auth/logout')
                 .then(() => {
                     dispatch(logout());
                     dispatch(clearCart());
@@ -30,6 +30,36 @@ function NavBar() {
     let handleRemoveFromCart = (book) => {
         dispatch(removeBook(book));
     }
+    let handleBorrow = async () => {
+        if (!user) {
+            alert('Please log in to borrow books.');
+            return;
+        }
+
+        let days = prompt('Enter the number of days you want to borrow the books (max 30 days):');
+        days = parseInt(days);
+
+        if (isNaN(days) || days < 1 || days > 30) {
+            alert('Please enter a valid number of days between 1 and 30.');
+            return;
+        }
+
+        const borrowData = {
+            user_id: user._id,
+            book_list: cart.map(item => ({ book_id: item._id, quantity: item.quantity })),
+            days: days
+        };
+        console.log(borrowData);
+
+        try {
+            await axios.post('/borrow', borrowData);
+            dispatch(clearCart());
+            alert('Books borrowed successfully!');
+        } catch (error) {
+            console.error('Error borrowing books:', error);
+            alert('Error borrowing books. Please try again.');
+        }
+    } 
 
     return (
         <div className="navbar bg-base-100">
@@ -68,6 +98,9 @@ function NavBar() {
                                 </li>
                                 <li>
                                     <Link to={"/admin/borrows"}>Borrows</Link>
+                                </li>
+                                <li>
+                                    <Link to={"/admin/books/add"}>Upload book</Link>
                                 </li>
                             </ul>
                         </div>
@@ -129,7 +162,7 @@ function NavBar() {
                             user ?
                                 <tr className="flex justify-center">
                                     <td colSpan={2}>
-                                        <button className={"btn btn-primary items-center"}>Borrow</button>
+                                        <button onClick={handleBorrow} className={"btn btn-primary items-center"}>Borrow</button>
                                     </td>
                                 </tr>
                                 :

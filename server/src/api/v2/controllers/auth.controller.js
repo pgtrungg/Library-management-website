@@ -5,6 +5,7 @@ let sendEmail = require('../helper/email.helper');
 const GoogleRecaptcha = require('google-recaptcha');
 let User = require('../models/user.model');
 let axios = require('axios');
+let verifyAccessToken = require('../helper/jwt.helper').verifyAccessToken;
 
 
 // Support functions
@@ -24,7 +25,7 @@ const generateToken = async (user) => {
 // Login controller
 // POST /api/v2/auth/login
 // Request body: { email, password, remember }
-// Response body: { message, username, _id, accessToken, refreshToken }
+// Response body: { message, userusername, _id, accessToken, refreshToken }
 exports.login = async (req, res) => {
     const { email, password,remember, recaptcha } = req.body;
     
@@ -81,8 +82,9 @@ exports.login = async (req, res) => {
             res.cookie('refreshToken', tokens.refreshToken, options);
             return res.status(200).json({
                 message: 'Login successful',
-                name: user.name,
+                username: user.username,
                 _id: user._id,
+                role: user.role,
                 accessToken: tokens.accessToken,
                 refreshToken: tokens.refreshToken
             });
@@ -97,10 +99,10 @@ exports.login = async (req, res) => {
 
 // Register controller
 // POST /api/v2/auth/register
-// Request body: { name, password, email }
+// Request body: { username, password, email }
 exports.register = async (req, res) => {
-    let {name, password, email} = req.body;
-    if (!name || !password || !email ) {
+    let {username, password, email} = req.body;
+    if (!username || !password || !email ) {
         return res.status(400).json({message: 'Missing required fields'});
     }
     if (!isEmail(email)) {
@@ -122,12 +124,11 @@ exports.register = async (req, res) => {
                     return res.status(500).json({message: err.message});
                 }
                 let newUser = new User({
-                    name: name,
+                    username: username,
                     password: hash,
                     email: email,
                 });
                 await newUser.save();
-                console.log(1)
                 // send email with verification link to activate account
                 let verificationToken = await jwt.signEmailVerificationToken(newUser._id)
                 res.cookie('verificationToken', verificationToken, {httpOnly: true,maxAge: 10 * 60 * 1000});
@@ -313,3 +314,45 @@ exports.verifyEmail = async (req, res) => {
         return res.redirect(`${process.env.FRONTEND_URL}/final-register/failed`);
     }
 } 
+
+// check login status
+// GET /api/v2/auth/check-login
+exports.checkLoginStatus = async (req, res) => {
+    const token = req.cookies.accessToken || req.headers['x-access-token'];
+    if (!token) {
+        return res.status(401).json({message: 'Logged in'});
+    }
+    try {
+        let payload = await jwt.verifyAccessToken(token);
+        let user = await User.findById(payload, null, null);
+        if (!user) {
+            return res.status(404).json({message: 'User not found'});
+        }
+        return res.status(200).json({user});
+}
+    catch (error) {
+        if (process.env.NODE_ENV === 'development')
+            console.log(error);
+        return res.status(403).json({message: 'Forbidden'});
+    }
+}
+
+// check role
+// GET /api/v2/auth/check-role
+// Request body: { user}
+// Response body: { role }
+exports.checkRole = async (req, res) => {
+    const id = req.user._id;
+    try {
+        let user = await User.findById(id, null, null);
+        if (!user) {
+            return res.status(404).json({message: 'User not found'});
+        }
+        return res.status(200).json({role: user.role});
+    }
+    catch (error) {
+        if (process.env.NODE_ENV === 'development')
+            console.log(error);
+        return res.status(403).json({message: 'Forbidden'});
+    }
+}

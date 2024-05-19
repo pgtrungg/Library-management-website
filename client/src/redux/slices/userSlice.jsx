@@ -1,5 +1,5 @@
 import {createSlice} from '@reduxjs/toolkit';
-
+import Cookies from 'js-cookie';
 const initialState = localStorage.getItem('user')
     ? JSON.parse(localStorage.getItem('user'))
     : null;
@@ -14,6 +14,10 @@ const userSlice = createSlice({
         },
         logout: () => {
             localStorage.removeItem('user');
+            localStorage.removeItem('expirationTime');
+            Cookies.remove('accessToken');
+            Cookies.remove('refreshToken');
+            
             return null;
         }
     }

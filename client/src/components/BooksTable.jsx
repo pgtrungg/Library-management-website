@@ -1,10 +1,12 @@
-import {useState} from "react";
-import {useDispatch} from 'react-redux';
-import {addBook} from '../redux/slices/cartSlice.jsx';
+import { useState } from "react";
+import { useDispatch } from 'react-redux';
+import { addBook } from '../redux/slices/cartSlice.jsx';
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 function BooksTable() {
     let [books, setBooks] = useState([]);
+    let navigate = useNavigate();
 
     let [filteredBooks, setFilteredBooks] = useState({});
     const getQuery = () => {
@@ -30,7 +32,7 @@ function BooksTable() {
     const filterBooks = () => {
         let query = getQuery();
         try {
-            axios.get('book/gets', {params: query})
+            axios.get('/books', { params: query })
                 .then((response) => {
                     if (response.data)
                         setBooks(response.data);
@@ -43,7 +45,7 @@ function BooksTable() {
     if (books.length === 0) {
         let query = getQuery();
         try {
-            axios.get('book/gets', {params: query})
+            axios.get('/books', { params: query })
                 .then((response) => {
                     if (response.data.length > 0)
                         setBooks(response.data);
@@ -72,6 +74,9 @@ function BooksTable() {
         book.quantity = quantity;
         dispatch(addBook(book));
     }
+    const viewDetail = (bookId) => {
+        navigate(`/books/${bookId}`)
+    }
 
 
     return (
@@ -79,29 +84,29 @@ function BooksTable() {
             {/*Filter*/}
             <div className='form-container'>
                 <div className='form-control'>
-                    <input type="text" placeholder="Search by username" className="input input-bordered"
-                           value={filteredBooks.title}
-                           onChange={(e) => setFilteredBooks({...filteredBooks, title: e.target.value})}/>
+                    <input type="text" placeholder="Search by title" className="input input-bordered"
+                        value={filteredBooks.title}
+                        onChange={(e) => setFilteredBooks({ ...filteredBooks, title: e.target.value })} />
                 </div>
                 <div className='form-control'>
                     <input type="text" placeholder="Search by author" className="input input-bordered"
-                           value={filteredBooks.author}
-                           onChange={(e) => setFilteredBooks({...filteredBooks, author: e.target.value})}/>
+                        value={filteredBooks.author}
+                        onChange={(e) => setFilteredBooks({ ...filteredBooks, author: e.target.value })} />
                 </div>
                 <div className='form-control'>
                     <input type="text" placeholder="Search by publisher" className="input input-bordered"
-                           value={filteredBooks.publisher}
-                           onChange={(e) => setFilteredBooks({...filteredBooks, publisher: e.target.value})}/>
+                        value={filteredBooks.publisher}
+                        onChange={(e) => setFilteredBooks({ ...filteredBooks, publisher: e.target.value })} />
                 </div>
                 <div className='form-control'>
                     <input type="text" placeholder="Search by ISBN" className="input input-bordered"
-                           value={filteredBooks.isbn}
-                           onChange={(e) => setFilteredBooks({...filteredBooks, isbn: e.target.value})}/>
+                        value={filteredBooks.isbn}
+                        onChange={(e) => setFilteredBooks({ ...filteredBooks, isbn: e.target.value })} />
                 </div>
                 <div className='form-control'>
                     <input type="text" placeholder="Search by date published" className="input input-bordered"
-                           value={filteredBooks.datePublished}
-                           onChange={(e) => setFilteredBooks({...filteredBooks, datePublished: e.target.value})}/>
+                        value={filteredBooks.datePublished}
+                        onChange={(e) => setFilteredBooks({ ...filteredBooks, datePublished: e.target.value })} />
                 </div>
                 <div className="form-control">
                     <button className="btn btn-primary" onClick={filterBooks}>
@@ -112,27 +117,37 @@ function BooksTable() {
             <div className={'overflow-x-auto'}>
                 <table className="table">
                     <thead>
-                    <tr>
-                        <th>Title</th>
-                        <th>Author</th>
-                        <th>ISBN</th>
-                        <th>Publisher</th>
-                        <th>Date Published</th>
-                        <th>Quantity</th>
-                    </tr>
+                        <tr>
+                            <th>Title</th>
+                            <th>Author</th>
+                            <th>ISBN</th>
+                            <th>Publisher</th>
+                            <th>Date Published</th>
+                            <th>Quantity</th>
+                            <th>More Details</th>
+                        </tr>
                     </thead>
                     <tbody>
-                    {books.map((book) => {
+                        {books.map((book) => {
                             return (
-                                <tr key={book.bookId}>
+                                <tr key={book._id}>
                                     <td>{book.title}</td>
                                     <td>{book.author}</td>
                                     <td>{book.isbn}</td>
                                     <td>{book.publisher}</td>
                                     <td>
-                                        {new Date(book.datePublished).toLocaleDateString()}
+                                        {new Date(book.publication_date).toLocaleDateString()}
                                     </td>
                                     <td>{book.quantity}</td>
+                                    <td>
+                                        <button
+                                            className="underline hover:text-blue-500"
+                                            onClick={() => viewDetail(book._id)}
+                                        >
+                                            View
+                                        </button>
+
+                                    </td>
                                     <td>
                                         {/* Add to Cart Button */}
                                         <button className="btn btn-primary" onClick={() => {
@@ -144,7 +159,7 @@ function BooksTable() {
                                 </tr>
                             )
                         }
-                    )}
+                        )}
                     </tbody>
                 </table>
             </div>

@@ -68,6 +68,7 @@ exports.create = async (req, res) => {
             message: "Book title can not be empty"
         });
     }
+    console.log(req.body);
 
     // Get categories from the database if they exist get their ids and add them to the book object before saving else
     // create them
@@ -82,19 +83,28 @@ exports.create = async (req, res) => {
         language: req.body.language,
         isbn: req.body.isbn,
         categories: [],
+        category_name: req.body.categories
     }
-
     if (req.body.categories) {
         try {
-            let categoriesData = await Category.find({name: {$in: req.body.categories}}, null, null)
-
+            // Ensure req.body.categories is an array
+            const categoriesArray = Array.isArray(req.body.categories) ? req.body.categories : [req.body.categories];
+    
+            // Find existing categories
+            let categoriesData = await Category.find({ name: { $in: categoriesArray } });
+    
+            // Map existing categories to their IDs
             book_data.categories = categoriesData.map(category => category._id);
-
-            let newCategories = req.body.categories.filter(category => !categoriesData.map(c => c.name).includes(category));
-
+    
+            // Determine new categories that need to be created
+            let existingCategoryNames = categoriesData.map(category => category.name);
+            let newCategories = categoriesArray.filter(category => !existingCategoryNames.includes(category));
+    
             if (newCategories.length > 0) {
-                let createdCategories = await Category.insertMany(newCategories.map(name => ({name})), null);
-
+                // Create new categories
+                let createdCategories = await Category.insertMany(newCategories.map(name => ({ name })));
+    
+                // Add new category IDs to book_data.categories
                 book_data.categories.push(...createdCategories.map(category => category._id));
             }
         } catch (err) {
@@ -103,15 +113,20 @@ exports.create = async (req, res) => {
             });
         }
     }
+    
 
     // Create a Book
     const book = new Book(book_data);
+    console.log('Book:', book);
+    console.log(book);
 
     // Save Book in the database
     try {
         const savedBook = await book.save();
+        console.log(savedBook);
         res.status(201).json(savedBook);
     } catch (err) {
+        console.error(err);
         res.status(500).json({
             message: err.message || "Some error occurred while creating the Book."
         });
@@ -133,6 +148,10 @@ exports.findOne = (req, res) => {
                     message: "Book not found with id " + req.params.bookId
                 });
             }
+            let a= Category.findById(book.categories[0])
+            console.log(a)
+
+
             res.status(200).json(book);
         })
         .catch(err => {
@@ -247,6 +266,7 @@ exports.delete = (req, res) => {
  * Response: Book object || error message
  */
 exports.addReview = (req, res) => {
+
     // Validate Request
     if (!req.body.rating) {
         return res.status(400).json({
@@ -257,10 +277,10 @@ exports.addReview = (req, res) => {
     // Find book and update it with the request body
     let review = new Review({
         rating: req.body.rating,
-        review: req.body.review,
         user_id: req.user._id,
         book_id: req.params.bookId,
-        comment: req.body.comment
+        comment: req.body.text,
+        username: req.user.username
     });
 
     review.save()

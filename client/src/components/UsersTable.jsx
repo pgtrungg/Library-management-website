@@ -48,7 +48,7 @@ function UsersTable() {
     if (users.length === 0) {
         let query = getQuery();
         try {
-            axios.get('user/gets', {params: query})
+            axios.get('/users', {params: query})
                 .then((response) => {
                     if (response.data.length > 0)
                         setUsers(response.data);
@@ -61,7 +61,7 @@ function UsersTable() {
     let filterUsers = () => {
         let query = getQuery();
         try {
-            axios.get('user/gets', {params: query})
+            axios.get('/users', {params: query})
                 .then((response) => {
                     setUsers(response.data);
                 });

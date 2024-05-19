@@ -1,6 +1,6 @@
 let {Borrowing, Borrowing_Details} = require('../models/borrow.model');
-let {Book} = require('../models/book.model');
-let {User} = require('../models/user.model');
+let Book = require('../models/book.model');
+let User = require('../models/user.model');
 
 
 // User Functions
@@ -27,10 +27,19 @@ exports.borrow = async (req, res) => {
     }
 
     // Check if user exists
-    let user = await User.findById(req.body.user_id);
-    if (!user) {
-        res.status(404).send({
-            message: "User not found!"
+    console.log(req.body.user_id);
+    try {
+        let user= await User.findById(req.body.user_id);
+        if (!user) {
+            res.status(404).send({
+                message: "User not found!"
+            });
+            return;
+        }
+    } catch (error) {
+        console.error('Error finding user:', error);
+        res.status(500).send({
+            message: "Error retrieving user information"
         });
         return;
     }
@@ -99,6 +108,7 @@ exports.borrow = async (req, res) => {
  * GET /api/v2/borrow
  */
 exports.borrowings = (req, res) => {
+    console.log(req.user._id);
     Borrowing.find({ user_id: req.user._id }, { __v: 0 }, null)
         .then(data => {
             res.send(data);
@@ -118,7 +128,7 @@ exports.borrowings = (req, res) => {
  * PUT /api/v2/borrow/:id
  */
 exports.return = async (req, res) => {
-    let id = req.params.id;
+    let id = req.params.borrowId;
 
     let borrowing = await Borrowing.findById(id, { __v: 0 }, null);
     if (!borrowing) {
@@ -239,6 +249,7 @@ exports.details = async (req, res) => {
  * GET /api/v2/borrow/admin
  */
 exports.findAll = (req, res) => {
+    console.log(1)
     let condition = {};
     if (req.query.user_id) {
         condition.user_id = req.query.user_id;

@@ -1,7 +1,8 @@
 let Book = require('../models/book.model');
 let Category = require('../models/category.model');
 let Review = require('../models/review.model');
-
+const fs = require("node:fs");
+const uploadOnCloudinary = require('../helper/cloudinary.helper');
 /**
  * Book(title, author, description, cover, publication_date, publisher, quantity, language, isbn, average_rating,
  * total_ratings, reviews, categories)
@@ -68,7 +69,13 @@ exports.create = async (req, res) => {
             message: "Book title can not be empty"
         });
     }
-    console.log(req.body);
+
+    // upload cover image
+    if (!req.file) {
+        return res.status(400).json({
+            message: "Book cover image is required"
+        });
+    }
 
     // Get categories from the database if they exist get their ids and add them to the book object before saving else
     // create them
@@ -76,15 +83,15 @@ exports.create = async (req, res) => {
         title: req.body.title,
         author: req.body.author,
         description: req.body.description,
-        cover: req.file ? req.file.path : 'https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.imdb.com%2Ftitle%2Ftt11206172%2F&psig=AOvVaw2lztlDB21LAbkrjhDZDMUS&ust=1714803217679000&source=images&cd=vfe&opi=89978449&ved=0CBIQjRxqFwoTCOjqhPjp8IUDFQAAAAAdAAAAABAE',
+        // cover: req.file ? req.file.path : 'https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.imdb.com%2Ftitle%2Ftt11206172%2F&psig=AOvVaw2lztlDB21LAbkrjhDZDMUS&ust=1714803217679000&source=images&cd=vfe&opi=89978449&ved=0CBIQjRxqFwoTCOjqhPjp8IUDFQAAAAAdAAAAABAE',
         publication_date: req.body.publication_date,
         publisher: req.body.publisher,
         quantity: req.body.quantity,
         language: req.body.language,
         isbn: req.body.isbn,
         categories: [],
-        category_name: req.body.categories
     }
+
     if (req.body.categories) {
         try {
             // Ensure req.body.categories is an array
@@ -108,25 +115,35 @@ exports.create = async (req, res) => {
                 book_data.categories.push(...createdCategories.map(category => category._id));
             }
         } catch (err) {
+            fs.unlinkSync(req.file.path);
             return res.status(500).json({
                 message: err.message || "Some error occurred while creating the Book."
             });
         }
     }
-    
+        
+    // Upload cover image to cloudinary
+    let cover = await uploadOnCloudinary(req.file.path);
+    // fs.unlinkSync(req.file.path);
+    if (!cover) {
+        // delete uploaded image
+        return res.status(500).json({
+            message: "Some error occurred while creating the Book."
+        });
+    }
+    book_data.cover = cover.url;
+
 
     // Create a Book
     const book = new Book(book_data);
-    console.log('Book:', book);
-    console.log(book);
 
     // Save Book in the database
     try {
         const savedBook = await book.save();
-        console.log(savedBook);
         res.status(201).json(savedBook);
     } catch (err) {
-        console.error(err);
+        // delete uploaded image
+        fs.unlinkSync(req.file.path);
         res.status(500).json({
             message: err.message || "Some error occurred while creating the Book."
         });

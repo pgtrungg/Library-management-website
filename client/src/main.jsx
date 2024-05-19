@@ -7,7 +7,12 @@ import store from './redux/store';
 import { Provider } from 'react-redux';
 import {jwtDecode} from 'jwt-decode'; // Corrected import
 import Cookies from 'js-cookie';
-
+// set another axios instance for cloudinary
+const cloudinaryAxios = axios.create({
+    baseURL: 'https://api.cloudinary.com/v1_1/dnmsfjbqj',
+});
+export default cloudinaryAxios;
+// How to use cloudinaryAxios
 // Set default Axios configuration
 axios.defaults.baseURL = 'http://localhost:3000/api/v2';
 axios.defaults.withCredentials = true;
@@ -40,7 +45,7 @@ axios.interceptors.request.use(
         let accessToken = Cookies.get('accessToken');
         const expirationTime = localStorage.getItem('expirationTime');
 
-        if (expirationTime && Date.now() >= expirationTime * 1000) {
+        if (expirationTime && Date.now() >= expirationTime * 1000-2*60*1000) {
             accessToken = await refreshAccessToken();
         }
 

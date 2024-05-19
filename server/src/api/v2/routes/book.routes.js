@@ -3,10 +3,11 @@ let router = express.Router();
 
 let bookController = require('../controllers/book.controller');
 let auth = require('../middlewares/auth.middleware');
+let {upload, imageFilterMiddleware} = require('../middlewares/multer.middleware');
 
 router.route('/')
     .get(bookController.findAll)  // GET /api/v2/books - Retrieve all Books from the database (Public)
-    .post(auth.adminMiddleware, bookController.create); // POST /api/v2/books - Create a new Book (Admin)
+    .post(auth.adminMiddleware, upload.single('cover'), imageFilterMiddleware, bookController.create); // POST /api/v2/books - Create a new Book (Admin)
 
 router.route('/:bookId')
     .get(bookController.findOne) // GET /api/v2/books/:bookId - Retrieve a single Book with id (Public)

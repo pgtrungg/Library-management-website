@@ -4,7 +4,7 @@ let path = require('path');
 let cookieParser = require('cookie-parser');
 let logger = require('morgan');
 let cors = require('cors');
-
+let multer = require('multer');
 require('dotenv').config();
 
 // personal package
@@ -21,7 +21,7 @@ let apiRouter = require('./src/api/versionRouter');
 // app
 let app = express();
 
-
+const upload = multer({ dest: 'uploads/' });
 // middleware
 app.use(cors({
     origin: 'http://localhost',

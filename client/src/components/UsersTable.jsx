@@ -159,7 +159,7 @@ function UsersTable() {
                                     <div>
                                         <div className="font-bold">{user.username}</div>
                                         <div className="text-sm opacity-50">
-                                            {user.isVerified ? 'Verified' : 'Not Verified'}
+                                            {user.status }
                                         </div>
                                     </div>
                                 </div>
@@ -170,7 +170,7 @@ function UsersTable() {
                                 {user.address ? user.address : <strong>N/A</strong>}
                             </td>
                             <td>
-                                {user.adminRole ? 'Admin' : user.managerRole ? 'Manager' : 'User'}
+                                {user.role}
                             </td>
                             <td>
                                 <button className="btn btn-ghost btn-xs">details</button>

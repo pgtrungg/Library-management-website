@@ -81,7 +81,8 @@ exports.updateProfile = async (req, res) => {
 // PUT /api/v2/user/:userId/avatar
 // Request body: { avatar }
 exports.updateAvatar = async (req, res) => {
-    if (!req.user._id.toString() !== req.params.userId) {
+    if (!(req.user._id.toString() === req.params.userId)) {
+        console.log(req.user._id.toString(), req.params.userId);
         return res.status(403).json({message: 'Forbidden'});
     }
     let location = req.file?.path;
@@ -106,6 +107,7 @@ exports.updateAvatar = async (req, res) => {
     } catch (error) {
         if (process.env.NODE_ENV === 'development')
             console.log(error);
+        fs.unlinkSync(location);
         return res.status(500).json({message: 'Internal server error'});
     }
 

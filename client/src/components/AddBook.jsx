@@ -34,8 +34,24 @@ const AddBookForm = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
+        const formDataToSend = new FormData();
+        formDataToSend.append('title', formData.title);
+        formDataToSend.append('author', formData.author);
+        formDataToSend.append('description', formData.description);
+        formDataToSend.append('publication_date', formData.publication_date);
+        formDataToSend.append('publisher', formData.publisher);
+        formDataToSend.append('language', formData.language);
+        formDataToSend.append('isbn', formData.isbn);
+        formDataToSend.append('quantity', formData.quantity);
+        formDataToSend.append('categories', formData.categories);
+        formDataToSend.append('cover', formData.coverImage);
+
         try {
-            await axios.post('/books', formData);
+            await axios.post('/books', formDataToSend, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
             setFormData({
                 title: '',
                 author: '',
@@ -59,6 +75,7 @@ const AddBookForm = () => {
         <div className="max-w-lg mx-auto p-4 bg-gray-100 rounded-md">
             <h2 className="text-xl font-bold mb-4">Upload Book Cover and Input Details</h2>
             <form onSubmit={handleSubmit}>
+                {/* Your form inputs */}
                 <div className="mb-4">
                     <label htmlFor="title" className="block mb-1">Title:</label>
                     <input type="text" id="title" name="title" value={formData.title} onChange={handleChange} className="w-full px-3 py-2 border rounded-md" required />

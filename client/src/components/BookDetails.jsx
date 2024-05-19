@@ -53,6 +53,7 @@ const BookDetails = () => {
             console.error('Error adding review:', error);
         }
     };
+    
 
     if (isLoading) {
         return <div>Loading...</div>;
@@ -67,12 +68,14 @@ const BookDetails = () => {
             <h1 className="text-2xl font-bold mb-4">{book.title}</h1>
             <p><strong>Author:</strong> {book.author}</p>
             <p><strong>Publication Date:</strong> {new Date(book.publication_date).toLocaleDateString()}</p>
-            <p><strong>Categories:</strong> {book.category_name}</p>
+            <p><strong>Categories:</strong> {book.categories}</p>
             <p><strong>Description:</strong> {book.description}</p>
 
-            {book.coverImage && (
-                <img src={book.coverImage} alt="Book cover" className="mt-4" style={{ maxWidth: '300px' }} />
-            )}
+            {book.cover && (
+    <div className="flex justify-center mt-4">
+        <img src={book.cover} alt="Book cover" style={{ maxWidth: '300px' }} />
+    </div>
+)}
 
             <h2 className="text-xl font-bold mt-8 mb-4">Reviews</h2>
             {reviews.length > 0 ? (
@@ -85,6 +88,15 @@ const BookDetails = () => {
                             <div className="flex items-center">
                                 <p className="text-gray-500">Rating: {review.rating}/5</p>
                             </div>
+                            {user.role === 'admin' && (
+                                <button
+                                    onClick={() => handleRemoveReview(review._id)}
+                                    className="px-4 py-2 hover:text-red-500"
+                                >
+                                    X
+                                </button>
+                            )}
+
                         </li>
                     ))}
                 </ul>

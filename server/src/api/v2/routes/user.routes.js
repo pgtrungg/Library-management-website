@@ -3,7 +3,7 @@ const router = express.Router();
 
 const userController = require('../controllers/user.controller');
 const auth = require('../middlewares/auth.middleware');
-const upload = require('../middlewares/multer.middleware');
+const {upload, imageFilterMiddleware} = require('../middlewares/multer.middleware');
 
 
 // Protected routes
@@ -13,7 +13,7 @@ router.route('/:userId')
     .delete(auth.authMiddleware, userController.deleteUser) // DELETE /api/v2/users/:userId - Delete a User with id (User)
 
 router.route('/:userId/avatar')
-    .patch(auth.authMiddleware, upload.single('cover') , userController.updateAvatar) // PATCH /api/v2/users/:userId/avatar - Update Avatar of a User with id (User)
+    .patch(auth.authMiddleware, upload.single('avatar'), imageFilterMiddleware, userController.updateAvatar) // PATCH /api/v2/users/:userId/avatar - Upload Avatar of a User with id (User)
 
 router.route('/:userId/password')
     .patch(auth.authMiddleware, userController.changePassword) // PATCH /api/v2/users/:userId/password - Change Password of a User with id (User)

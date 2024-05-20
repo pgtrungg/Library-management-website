@@ -6,7 +6,6 @@ import Swal from 'sweetalert2';
 import { useNavigate } from 'react-router-dom';
 import { logout } from '../redux/slices/userSlice';
 import { clearCart } from '../redux/slices/cartSlice';
-import { current } from '@reduxjs/toolkit';
 
 const Profile = () => {
   const user = useSelector((state) => state.user);
@@ -65,37 +64,48 @@ const Profile = () => {
   };
   const handleDeleteAccount = () => {
     Swal.fire({
-      title: 'Are you sure?',
-      text: 'You will not be able to recover your account!',
-      icon: 'warning',
+      title: 'Enter your password to delete account',
+      input: 'password',
+      inputAttributes: {
+        autocapitalize: 'off',
+        placeholder: 'Enter your password',
+        type: 'password'
+      },
       showCancelButton: true,
-      confirmButtonColor: '#3085d6',
-      cancelButtonColor: '#d33',
-      confirmButtonText: 'Yes, delete it!'
-    }).then((result) => {
-      if (result.isConfirmed) {
-        axios.delete(`/users/${userId}`)
-          .then(() => {
-            Swal.fire(
-              'Deleted!',
-              'Your account has been deleted.',
-              'success'
-            );
-            dispatch(logout());
-            dispatch(clearCart());
-            navigate('/login');
+      confirmButtonText: 'Delete',
+      showLoaderOnConfirm: true,
+      preConfirm: (password) => {
+        return axios.delete(`/users/${userId}`, {
+          data: { password },
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+          .then(response => {
+            if (response.status !== 200) {
+              throw new Error(response.data.message || 'Failed to delete account');
+            }
+            return response.data;
           })
           .catch(error => {
-            console.error('Error deleting account:', error);
-            Swal.fire(
-              'Oops!',
-              'Something went wrong while deleting your account.',
-              'error'
+            Swal.showValidationMessage(
+              `Request failed: ${error.response ? error.response.data.message : error.message}`
             );
           });
+      },
+      allowOutsideClick: () => !Swal.isLoading()
+    }).then((result) => {
+      if (result.isConfirmed) {
+        Swal.fire('Deleted!', 'Your account has been deleted.', 'success');
+        dispatch(logout());
+        dispatch(clearCart());
+        navigate('/login');
       }
     });
   };
+  
+
+
 
   const handleChangePassword = () => {
     setIsPasswordModalOpen(true);

@@ -165,11 +165,23 @@ exports.changePassword = async (req, res) => {
 
 // Delete user controller
 // DELETE /api/v2/user/:userId
+// Request body: {password }
 exports.deleteUser = async (req, res) => {
-    if (!req.user._id.toString() !== req.params.userId) {
-        return res.status(403).json({message: 'Forbidden'});
+    if (req.user._id.toString() !== req.params.userId) {
+        return res.status(403).json({ message: 'Forbidden' });
     }
-    User.findByIdAndDelete(req.user._id, null)
+    if (!req.body.password) {
+        return res.status(400).json({ message: 'Missing required fields' });
+    }
+    let user = await User.findById(req.user._id, null, null);
+    if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+    }
+    let isMatch = await bcrypt.compare(req.body.password, user.password);
+    if (!isMatch) {
+        return res.status(400).json({ message: 'Invalid password' });
+    } else {
+        User.findByIdAndDelete(req.params.userId, null)
         .then(() => {
             return res.status(200).json({message: 'User deleted successfully'});
         })
@@ -178,7 +190,9 @@ exports.deleteUser = async (req, res) => {
                 console.log(error);
             return res.status(500).json({message: 'Internal server error'});
         });
+    }
 }
+
 
 
 // Admin Functions Controllers
@@ -249,7 +263,7 @@ exports.getUserById = async (req, res) => {
 
 // Delete user controller
 // DELETE /api/v2/users/admin/:userId
-exports.deleteUser = async (req, res) => {
+exports.deleteUserByAdmin = async (req, res) => {
     User.findByIdAndDelete(req.params.userId, null)
         .then(() => {
             return res.status(200).json({message: 'User deleted successfully'});

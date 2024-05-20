@@ -172,9 +172,7 @@ function UsersTable() {
                             <td>
                                 {user.role}
                             </td>
-                            <td>
-                                <button className="btn btn-ghost btn-xs">details</button>
-                            </td>
+                          
                         </tr>
                     ))}
                     </tbody>

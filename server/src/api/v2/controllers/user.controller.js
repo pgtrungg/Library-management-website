@@ -1,7 +1,8 @@
 let User = require('../models/user.model');
-
 let cloudinary = require('../helper/cloudinary.helper');
 const bcrypt = require("bcrypt");
+const fs = require("node:fs");
+
 
 // User Functions Controllers
 

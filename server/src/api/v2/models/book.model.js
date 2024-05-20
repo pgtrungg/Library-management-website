@@ -41,6 +41,9 @@ const bookSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Category'
     }],
+    categories_name: {
+        type: String
+    },
     sum_rating: {
         type: Number,
         default: 0

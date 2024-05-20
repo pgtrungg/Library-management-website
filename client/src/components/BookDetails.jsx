@@ -68,7 +68,7 @@ const BookDetails = () => {
             <h1 className="text-2xl font-bold mb-4">{book.title}</h1>
             <p><strong>Author:</strong> {book.author}</p>
             <p><strong>Publication Date:</strong> {new Date(book.publication_date).toLocaleDateString()}</p>
-            <p><strong>Categories:</strong> {book.categories}</p>
+            <p><strong>Categories:</strong> {book.categories_name}</p>
             <p><strong>Description:</strong> {book.description}</p>
 
             {book.cover && (
@@ -88,15 +88,7 @@ const BookDetails = () => {
                             <div className="flex items-center">
                                 <p className="text-gray-500">Rating: {review.rating}/5</p>
                             </div>
-                            {user.role === 'admin' && (
-                                <button
-                                    onClick={() => handleRemoveReview(review._id)}
-                                    className="px-4 py-2 hover:text-red-500"
-                                >
-                                    X
-                                </button>
-                            )}
-
+                            
                         </li>
                     ))}
                 </ul>

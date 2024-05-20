@@ -16,7 +16,7 @@ import BorrowsTable from './components/BorrowsTable.jsx';
 import OwnBorrowings from './components/OwnBorrowings.jsx';
 import { useSelector } from 'react-redux';
 import BookDetails from './components/BookDetails.jsx';
-
+import EditBook from './components/EditBook.jsx';
 function App() {
     let user = useSelector(state => state.user);
 
@@ -40,6 +40,8 @@ function App() {
                                 <Route path="/admin/books" element={<BooksTable />} />
                                 <Route path="/admin/borrows" element={<BorrowsTable />} />
                                 <Route path="/admin/books/add" element={<AddBookForm />} />
+                                <Route path="/admin/books/edit/:bookId" element={<EditBook />} />
+
                             </>
                         )}
                         <Route path="/book" element={<BookProfile />} />

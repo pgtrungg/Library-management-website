@@ -3,10 +3,13 @@ import { useDispatch } from 'react-redux';
 import { addBook } from '../redux/slices/cartSlice.jsx';
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
+import { ShoppingCartOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons';
 
 function BooksTable() {
     let [books, setBooks] = useState([]);
     let navigate = useNavigate();
+    let user = useSelector((state) => state.user);
 
     let [filteredBooks, setFilteredBooks] = useState({});
     const getQuery = () => {
@@ -74,8 +77,22 @@ function BooksTable() {
         book.quantity = quantity;
         dispatch(addBook(book));
     }
+    const removeBook = (bookId) => {
+        axios.delete(`/books/${bookId}`)
+            .then((response) => {
+                if (response.status === 200) {
+                    setBooks(books.filter((b) => b._id !== bookId));
+                }
+            })
+            .catch((error) => {
+                console.error('Error deleting book:', error);
+            });
+    }
     const viewDetail = (bookId) => {
         navigate(`/books/${bookId}`)
+    }
+    const editBook = (bookId) => {
+        navigate(`admin/books/edit/${bookId}`)
     }
 
 
@@ -125,6 +142,7 @@ function BooksTable() {
                             <th>Date Published</th>
                             <th>Quantity</th>
                             <th>More Details</th>
+
                         </tr>
                     </thead>
                     <tbody>
@@ -150,12 +168,24 @@ function BooksTable() {
                                     </td>
                                     <td>
                                         {/* Add to Cart Button */}
-                                        <button className="btn btn-primary" onClick={() => {
-                                            addToCart(book)
-                                        }}>
-                                            Add to Cart
+                                        <button onClick={() => addToCart(book)}>
+                                            <ShoppingCartOutlined />
                                         </button>
                                     </td>
+                                    {user.role === 'admin' && (
+                                        <td>
+                                            <button onClick={() => removeBook(book._id)}>
+                                                <DeleteOutlined />
+                                            </button>
+                                        </td>
+                                    )}
+                                    {user.role === 'admin' && (
+                                        <td>
+                                            <button onClick={() => editBook(book._id)}>
+                                                <EditOutlined />
+                                            </button>
+                                        </td>
+                                    )}
                                 </tr>
                             )
                         }

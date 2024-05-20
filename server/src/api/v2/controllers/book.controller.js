@@ -89,29 +89,20 @@ exports.create = async (req, res) => {
         quantity: req.body.quantity,
         language: req.body.language,
         isbn: req.body.isbn,
+        categories_name: req.body.categories ,
         categories: [],
     }
 
     if (req.body.categories) {
         try {
-            // Ensure req.body.categories is an array
             const categoriesArray = Array.isArray(req.body.categories) ? req.body.categories : [req.body.categories];
-    
-            // Find existing categories
             let categoriesData = await Category.find({ name: { $in: categoriesArray } });
-    
-            // Map existing categories to their IDs
             book_data.categories = categoriesData.map(category => category._id);
-    
-            // Determine new categories that need to be created
             let existingCategoryNames = categoriesData.map(category => category.name);
             let newCategories = categoriesArray.filter(category => !existingCategoryNames.includes(category));
     
             if (newCategories.length > 0) {
-                // Create new categories
                 let createdCategories = await Category.insertMany(newCategories.map(name => ({ name })));
-    
-                // Add new category IDs to book_data.categories
                 book_data.categories.push(...createdCategories.map(category => category._id));
             }
         } catch (err) {
@@ -166,7 +157,7 @@ exports.findOne = (req, res) => {
                 });
             }
             let a= Category.findById(book.categories[0])
-            console.log(a)
+
 
 
             res.status(200).json(book);
@@ -192,6 +183,7 @@ exports.findOne = (req, res) => {
  * Response: Book object || error message
  */
 exports.update = async (req, res) => {
+    console.log(req.body)
     try {
         // Validate Request
         if (!req.body.title) {
@@ -211,19 +203,43 @@ exports.update = async (req, res) => {
         if (req.body.quantity) update.quantity = req.body.quantity;
         if (req.body.language) update.language = req.body.language;
         if (req.body.isbn) update.isbn = req.body.isbn;
+        
 
         // Process categories
-        if (req.body.categories) {
-            let categoryData = await Category.find({name: {$in: req.body.categories}}, null, null).exec();
-            let categoryIds = categoryData.map(data => data._id);
-            let newCategories = req.body.categories.filter(data => !categoryData.map(c => c.name).includes(data));
+        // Process categories
+if (req.body.categories) {
+    try {
+        update.categories_name = req.body.categories;
+        // Ensure categoriesArray is always an array
+        const categoriesArray = Array.isArray(req.body.categories) ? req.body.categories : [req.body.categories];
 
-            if (newCategories.length > 0) {
-                let createdCategories = await Category.insertMany(newCategories.map(name => ({name})), null);
-                categoryIds.push(...createdCategories.map(category => category._id));
-            }
-            update.categories = categoryIds;
+        // Find categories matching the names in categoriesArray
+        let categoryData = await Category.find({ name: { $in: categoriesArray } }).exec();
+
+        // Get category IDs
+        let categoryIds = categoryData.map(data => data._id);
+
+        // Filter out new categories not present in the database
+        let newCategories = categoriesArray.filter(data => !categoryData.map(c => c.name).includes(data));
+
+        // If new categories are found, insert them into the database and update categoryIds
+        if (newCategories.length > 0) {
+            let createdCategories = await Category.insertMany(newCategories.map(name => ({ name })));
+            categoryIds.push(...createdCategories.map(category => category._id));
         }
+
+        // Update the categories field in the update object
+        update.categories = categoryIds;
+    } catch (err) {
+        // Handle error
+        console.error(err);
+        return res.status(500).json({
+            message: err.message || "Some error occurred while processing categories."
+        });
+    }
+}
+
+        
 
         // Find and update the book
         let updatedBook = await Book.findByIdAndUpdate(req.params.bookId, update, null).exec();

@@ -27,7 +27,6 @@ exports.borrow = async (req, res) => {
     }
 
     // Check if user exists
-    console.log(req.body.user_id);
     try {
         let user= await User.findById(req.body.user_id);
         if (!user) {
@@ -108,7 +107,6 @@ exports.borrow = async (req, res) => {
  * GET /api/v2/borrow
  */
 exports.borrowings = (req, res) => {
-    console.log(req.user._id);
     Borrowing.find({ user_id: req.user._id }, { __v: 0 }, null)
         .then(data => {
             res.send(data);
@@ -249,7 +247,6 @@ exports.details = async (req, res) => {
  * GET /api/v2/borrow/admin
  */
 exports.findAll = (req, res) => {
-    console.log(1)
     let condition = {};
     if (req.query.user_id) {
         condition.user_id = req.query.user_id;

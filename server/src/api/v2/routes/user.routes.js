@@ -23,7 +23,7 @@ router.route('/')
 
 router.route('/admin/:userId')
     .get(auth.adminMiddleware, userController.getUserById) // GET /api/v2/users/admin/:userId - Retrieve a single User with id (Admin)
-    .delete(auth.adminMiddleware, userController.deleteUser) // DELETE /api/v2/users/admin/:userId - Delete a User with id (Admin)
+    .delete(auth.adminMiddleware, userController.deleteUserByAdmin) // DELETE /api/v2/users/admin/:userId - Delete a User with id (Admin)
     .put(auth.adminMiddleware, userController.changeStatus) // PUT /api/v2/users/admin/:userId - Change Status of a User with id (Admin)
 
 

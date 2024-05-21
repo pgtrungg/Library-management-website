@@ -3,6 +3,7 @@ import {useDispatch, useSelector} from 'react-redux';
 import {logout} from "../redux/slices/userSlice";
 import {clearCart, removeBook} from "../redux/slices/cartSlice.jsx";
 import axios from "axios";
+import Swal from "sweetalert2";
 
 
 function NavBar() {
@@ -32,34 +33,63 @@ function NavBar() {
     }
     let handleBorrow = async () => {
         if (!user) {
-            alert('Please log in to borrow books.');
+            await Swal.fire({
+                icon: 'warning',
+                title: 'Please log in to borrow books.',
+                confirmButtonText: 'OK'
+            });
             return;
         }
-
-        let days = prompt('Enter the number of days you want to borrow the books (max 30 days):');
-        days = parseInt(days);
-
-        if (isNaN(days) || days < 1 || days > 30) {
-            alert('Please enter a valid number of days between 1 and 30.');
+    
+        const { value: days } = await Swal.fire({
+            title: 'Enter the number of days you want to borrow the books (max 30 days):',
+            input: 'number',
+            inputAttributes: {
+                min: 1,
+                max: 30,
+                step: 1
+            },
+            showCancelButton: true,
+            inputValidator: (value) => {
+                if (!value) {
+                    return 'You need to enter a number of days!';
+                }
+                if (isNaN(value) || value < 1 || value > 30) {
+                    return 'Please enter a valid number of days between 1 and 30.';
+                }
+                return null;
+            }
+        });
+    
+        if (!days) {
             return;
         }
-
+    
         const borrowData = {
             user_id: user._id,
             book_list: cart.map(item => ({ book_id: item._id, quantity: item.quantity })),
-            days: days
+            days: parseInt(days)
         };
         console.log(borrowData);
-
+    
         try {
             await axios.post('/borrow', borrowData);
             dispatch(clearCart());
-            alert('Books borrowed successfully!');
+            await Swal.fire({
+                icon: 'success',
+                title: 'Books borrowed successfully!',
+                confirmButtonText: 'OK'
+            });
         } catch (error) {
             console.error('Error borrowing books:', error);
-            alert('Error borrowing books. Please try again.');
+            await Swal.fire({
+                icon: 'error',
+                title: 'Error borrowing books. Please try again.',
+                confirmButtonText: 'OK'
+            });
         }
-    } 
+    }
+    
 
     return (
         <div className="navbar bg-base-100">

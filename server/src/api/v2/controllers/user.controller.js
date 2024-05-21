@@ -83,7 +83,6 @@ exports.updateProfile = async (req, res) => {
 // Request body: { avatar }
 exports.updateAvatar = async (req, res) => {
     if (!(req.user._id.toString() === req.params.userId)) {
-        console.log(req.user._id.toString(), req.params.userId);
         return res.status(403).json({message: 'Forbidden'});
     }
     let location = req.file?.path;

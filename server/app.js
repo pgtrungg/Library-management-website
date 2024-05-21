@@ -21,7 +21,6 @@ let apiRouter = require('./src/api/versionRouter');
 // app
 let app = express();
 
-const upload = multer({ dest: 'uploads/' });
 // middleware
 app.use(cors({
     origin: 'http://localhost',

@@ -3,6 +3,14 @@ let Category = require('../models/category.model');
 let Review = require('../models/review.model');
 const fs = require("node:fs");
 const uploadOnCloudinary = require('../helper/cloudinary.helper');
+const { JSDOM } = require('jsdom');
+const createDOMPurify = require('dompurify');
+// Create a new JSDOM instance
+const window = new JSDOM('').window;
+
+// Initialize DOMPurify with the JSDOM window
+const DOMPurify = createDOMPurify(window);
+
 /**
  * Book(title, author, description, cover, publication_date, publisher, quantity, language, isbn, average_rating,
  * total_ratings, reviews, categories)
@@ -306,13 +314,14 @@ exports.addReview = (req, res) => {
             message: "Rating can not be empty"
         });
     }
+    let cleanText = DOMPurify.sanitize(req.body.text);
 
     // Find book and update it with the request body
     let review = new Review({
         rating: req.body.rating,
         user_id: req.user._id,
         book_id: req.params.bookId,
-        comment: req.body.text,
+        comment: cleanText,
         username: req.user.username
     });
 

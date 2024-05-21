@@ -5,6 +5,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { ShoppingCartOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons';
+import Swal from 'sweetalert2';
 
 function BooksTable() {
     let [books, setBooks] = useState([]);
@@ -60,23 +61,34 @@ function BooksTable() {
 
     const dispatch = useDispatch();
 
-    const addToCart = (book) => {
-        // Ask the user for the quantity
-        let quantity = prompt('Enter the quantity');
-        if (!quantity) {
-            return;
+    const addToCart = async (book) => {
+    const { value: quantity } = await Swal.fire({
+        title: 'Enter the quantity',
+        input: 'number',
+        inputAttributes: {
+            min: 1,
+            step: 1,
+        },
+        showCancelButton: true,
+        inputValidator: (value) => {
+            if (!value) {
+                return 'You need to enter a quantity!';
+            }
+            if (isNaN(value)) {
+                return 'Quantity must be a number';
+            }
+            if (value <= 0 || value % 1 !== 0 || value > book.quantity) {
+                return 'Invalid quantity';
+            }
+            return null;
         }
-        if (isNaN(quantity)) {
-            alert('Quantity must be a number');
-            return;
-        }
-        if (quantity <= 0 || quantity % 1 !== 0 || quantity > book.quantity) {
-            alert('Invalid quantity');
-            return;
-        }
-        book.quantity = quantity;
+    });
+
+    if (quantity) {
+        book.quantity = parseInt(quantity, 10);  // Ensure quantity is an integer
         dispatch(addBook(book));
     }
+}
     const removeBook = (bookId) => {
         axios.delete(`/books/${bookId}`)
             .then((response) => {

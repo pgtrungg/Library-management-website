@@ -200,20 +200,21 @@ function BooksTable() {
                                             <ShoppingCartOutlined />
                                         </button>
                                     </td>
-                                    {user.role === 'admin' && (
-                                        <td>
-                                            <button onClick={() => removeBook(book._id)}>
-                                                <DeleteOutlined />
-                                            </button>
-                                        </td>
+                                    {user && user.role === 'admin' && (
+                                        <>
+                                            <td>
+                                                <button onClick={() => removeBook(book._id)}>
+                                                    <DeleteOutlined />
+                                                </button>
+                                            </td>
+                                            <td>
+                                                <button onClick={() => editBook(book._id)}>
+                                                    <EditOutlined />
+                                                </button>
+                                            </td>
+                                        </>
                                     )}
-                                    {user.role === 'admin' && (
-                                        <td>
-                                            <button onClick={() => editBook(book._id)}>
-                                                <EditOutlined />
-                                            </button>
-                                        </td>
-                                    )}
+
                                 </tr>
                             )
                         }

@@ -15,13 +15,13 @@ const cartSlice = createSlice({
     reducers: {
         addBook: (state, action) => {
             // Check if the book is already in the cart and increment the quantity
-            let book = state.find(book => book._id === action.payload._id);
-            if (book) {
-                book.quantity += action.payload.quantity;
+            let existingBook = state.find(book => book._id === action.payload._id);
+            if (existingBook) {
+                existingBook.quantity += action.payload.quantity;
             } else {
                 state.push(action.payload);
             }
-            saveToLocalStorage(state);
+            return saveToLocalStorage(state);
         },
         removeBook: (state, action) => {
             return saveToLocalStorage(state.filter(book => book._id !== action.payload._id));

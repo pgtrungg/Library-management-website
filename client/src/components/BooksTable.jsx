@@ -62,44 +62,60 @@ function BooksTable() {
     const dispatch = useDispatch();
 
     const addToCart = async (book) => {
-    const { value: quantity } = await Swal.fire({
-        title: 'Enter the quantity',
-        input: 'number',
-        inputAttributes: {
-            min: 1,
-            step: 1,
-        },
-        showCancelButton: true,
-        inputValidator: (value) => {
-            if (!value) {
-                return 'You need to enter a quantity!';
-            }
-            if (isNaN(value)) {
-                return 'Quantity must be a number';
-            }
-            if (value <= 0 || value % 1 !== 0 || value > book.quantity) {
-                return 'Invalid quantity';
-            }
-            return null;
-        }
-    });
-
-    if (quantity) {
-        book.quantity = parseInt(quantity, 10);  // Ensure quantity is an integer
-        dispatch(addBook(book));
-    }
-}
-    const removeBook = (bookId) => {
-        axios.delete(`/books/${bookId}`)
-            .then((response) => {
-                if (response.status === 200) {
-                    setBooks(books.filter((b) => b._id !== bookId));
+        console.log(book);
+        const { value: quantity } = await Swal.fire({
+            title: 'Enter the quantity',
+            input: 'number',
+            inputAttributes: {
+                min: 1,
+                step: 1,
+            },
+            showCancelButton: true,
+            inputValidator: (value) => {
+                if (!value) {
+                    return 'You need to enter a quantity!';
                 }
-            })
-            .catch((error) => {
-                console.error('Error deleting book:', error);
-            });
+                if (isNaN(value)) {
+                    return 'Quantity must be a number';
+                }
+                if (value <= 0 || value % 1 !== 0 || value > book.quantity) {
+                    return 'Invalid quantity';
+                }
+                return null;
+            }
+        });
+        console.log(quantity);
+        if (quantity) {
+            let book1 = { ...book };
+            book1.quantity = parseInt(quantity, 10);  // Ensure quantity is an integer
+            dispatch(addBook(book1));
+        }
     }
+    const removeBook = (bookId) => {
+
+        Swal.fire({
+            title: 'Are you sure you want to delete this book?',
+            text: 'You will not be able to recover this book!',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, delete it!',
+            cancelButtonText: 'No, keep it'
+        }).then((result) => {
+            if (result.isConfirmed) {
+
+                axios.delete(`/books/${bookId}`)
+                    .then((response) => {
+                        if (response.status === 200) {
+                            setBooks(books.filter((b) => b._id !== bookId));
+                        }
+                    })
+                    .catch((error) => {
+                        console.error('Error deleting book:', error);
+                    });
+            }
+        });
+    }
+
     const viewDetail = (bookId) => {
         navigate(`/books/${bookId}`)
     }

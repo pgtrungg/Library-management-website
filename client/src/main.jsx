@@ -45,12 +45,13 @@ axios.interceptors.request.use(
         let accessToken = Cookies.get('accessToken');
         const expirationTime = localStorage.getItem('expirationTime');
 
-        if (expirationTime && Date.now() >= expirationTime * 1000-2*60*1000) {
+        if (expirationTime && Date.now() >= expirationTime * 1000) {
             accessToken = await refreshAccessToken();
         }
 
         if (accessToken) {
             config.headers['Authorization'] = `Bearer ${accessToken}`;
+            config.headers['csrf-token'] = Cookies.get('csrfToken');
         }
 
         return config;
@@ -72,6 +73,7 @@ axios.interceptors.response.use(
             const newAccessToken = await refreshAccessToken();
             if (newAccessToken) {
                 axios.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
+                axios.defaults.headers.common['csrf-token'] = Cookies.get('csrfToken');
                 return axios(originalRequest);
             }
         }

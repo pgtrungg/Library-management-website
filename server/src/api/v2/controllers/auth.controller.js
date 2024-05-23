@@ -3,6 +3,10 @@ let bcrypt = require('bcrypt');
 let {isEmail, isStrongPassword} = require('validator');
 let sendEmail = require('../helper/email.helper');
 const GoogleRecaptcha = require('google-recaptcha');
+
+//for CSRF token
+let csrf = require('../helper/csrf.helper');
+
 let User = require('../models/user.model');
 let axios = require('axios');
 let verifyAccessToken = require('../helper/jwt.helper').verifyAccessToken;
@@ -71,8 +75,14 @@ exports.login = async (req, res) => {
             await user.save();
 
             let tokens = await generateToken(user);
+
+            //for CSRF token
+            let csrfToken = await csrf.generateCSRFToken();
+
+
+
             let options = {
-                httpOnly: true,
+                //httpOnly: true,
                 secure: process.env.NODE_ENV === 'production'
             };
             if (remember) {
@@ -80,6 +90,10 @@ exports.login = async (req, res) => {
             }
             res.cookie('accessToken', tokens.accessToken, options);
             res.cookie('refreshToken', tokens.refreshToken, options);
+            //for CSRF token
+            res.cookie('csrfToken', csrfToken, options);
+
+
             return res.status(200).json({
                 message: 'Login successful',
                 username: user.username,
@@ -164,6 +178,12 @@ exports.logout = async (req, res) => {
         .then(() => {
             res.clearCookie('accessToken');
             res.clearCookie('refreshToken');
+            //For CSRF token
+            res.clearCookie('csrfToken');
+
+
+            return res.status(200).json({message: 'Logout successful'});
+
             return res.status(200).json({message: 'Logout successful'});
         })
         .catch((error) => {
@@ -190,12 +210,22 @@ exports.refreshToken = async (req, res) => {
             return res.status(403).json({message: 'Invalid refresh token'});
         }
         let tokens = await generateToken(user);
+
+        //for CSRF token
+        let csrfToken = await csrf.generateCSRFToken();
+
+
         let options = {
-            httpOnly: true,
+            //httpOnly: true,
             secure: process.env.NODE_ENV === 'production'
         };
         res.cookie('accessToken', tokens.accessToken, options);
         res.cookie('refreshToken', tokens.refreshToken, options);
+
+        //for CSRF token
+        res.cookie('csrfToken', csrfToken);
+
+        console.log("csrfToken: ",csrfToken);
         return res.status(200).json({message: 'Token refreshed'});
     } catch (error) {
         if (process.env.NODE_ENV === 'development')

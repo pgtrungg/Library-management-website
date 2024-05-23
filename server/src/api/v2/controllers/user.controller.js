@@ -200,6 +200,7 @@ exports.deleteUser = async (req, res) => {
 // Get all users controller
 // GET /api/v2/users/
 exports.getAllUsers = async (req, res) => {
+    console.log(req.query);
     let condition = {};
     if (req.query.role) {
         condition.role = {$in: req.query.role.split(',')};

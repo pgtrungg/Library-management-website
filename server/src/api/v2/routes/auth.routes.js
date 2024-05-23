@@ -3,6 +3,7 @@ let router = express.Router();
 
 let authController = require('../controllers/auth.controller');
 let auth = require('../middlewares/auth.middleware');
+let csrf = require('../middlewares/csrf.middleware');
 
 router.route('/register')
     .post(authController.register); // POST /api/v2/auth/register - Register a new User (Public)
@@ -13,7 +14,7 @@ router.route('/login')
     .post(authController.login); // POST /api/v2/auth/login - Login User (Public)
 
 router.route('/logout')
-    .post(auth.authMiddleware, authController.logout); // POST /api/v2/auth/logout - Logout User (User)
+    .post(csrf.csrfMiddleware, csrfauth.authMiddleware, authController.logout); // POST /api/v2/auth/logout - Logout User (User)
 
 router.route('/refresh-token')
     .post(authController.refreshToken); // POST /api/v2/auth/refresh-token - Refresh Token (User)

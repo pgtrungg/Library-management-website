@@ -29,8 +29,8 @@ const refreshAccessToken = async () => {
             const expirationTime = jwtDecode(accessToken).exp;
 
             localStorage.setItem('expirationTime', expirationTime);
-            Cookies.set('accessToken', accessToken);
-            Cookies.set('refreshToken', refreshToken);
+            //Cookies.set('accessToken', accessToken);
+            //Cookies.set('refreshToken', refreshToken);
 
             return accessToken;
         }
@@ -51,7 +51,13 @@ axios.interceptors.request.use(
 
         if (accessToken) {
             config.headers['Authorization'] = `Bearer ${accessToken}`;
-            config.headers['csrf-token'] = Cookies.get('csrfToken');
+            //config.headers['csrf-token'] = Cookies.get('csrfToken');
+        }
+
+        //for CSRF token
+        const csrfToken = Cookies.get('csrfToken');
+        if (csrfToken) {
+            config.headers['csrf-token'] = csrfToken;
         }
 
         return config;

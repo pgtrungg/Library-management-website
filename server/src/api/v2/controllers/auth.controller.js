@@ -225,7 +225,7 @@ exports.refreshToken = async (req, res) => {
         //for CSRF token
         res.cookie('csrfToken', csrfToken);
 
-        console.log("csrfToken: ",csrfToken);
+        //console.log("csrfToken: ",csrfToken);
         return res.status(200).json({message: 'Token refreshed'});
     } catch (error) {
         if (process.env.NODE_ENV === 'development')

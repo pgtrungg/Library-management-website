@@ -345,44 +345,27 @@ exports.verifyEmail = async (req, res) => {
     }
 } 
 
-// check login status
-// GET /api/v2/auth/check-login
-exports.checkLoginStatus = async (req, res) => {
-    const token = req.cookies.accessToken || req.headers['x-access-token'];
-    if (!token) {
-        return res.status(401).json({message: 'Logged in'});
-    }
+/// active account
+exports.activateAccount = async (req, res) => {
     try {
-        let payload = await jwt.verifyAccessToken(token);
-        let user = await User.findById(payload, null, null);
+        let user = await User.find({email: req.body.email});
         if (!user) {
             return res.status(404).json({message: 'User not found'});
         }
-        return res.status(200).json({user});
-}
-    catch (error) {
-        if (process.env.NODE_ENV === 'development')
-            console.log(error);
-        return res.status(403).json({message: 'Forbidden'});
-    }
-}
+        // send email with verification link to activate account
+        let verificationToken = await jwt.signEmailVerificationToken(user._id)
+        res.cookie('verificationToken', verificationToken, {httpOnly: true,maxAge: 10 * 60 * 1000});
+        let verificationLink = `${process.env.BACKEND_URL}/api/v2/auth/verify-email/${verificationToken}`;
+        let subject = 'Account Verification';
+        let text = `Click on the link to verify your account: ${verificationLink}`;
+        let html = `<p>Click <a href="${verificationLink}">here</a> to verify your account</p>`;
+        sendEmail(req.body.email , subject, text, html).then()
+        return res.status(201).json({message: 'Please check your email to verify your account'});
 
-// check role
-// GET /api/v2/auth/check-role
-// Request body: { user}
-// Response body: { role }
-exports.checkRole = async (req, res) => {
-    const id = req.user._id;
-    try {
-        let user = await User.findById(id, null, null);
-        if (!user) {
-            return res.status(404).json({message: 'User not found'});
-        }
-        return res.status(200).json({role: user.role});
-    }
-    catch (error) {
+        
+    } catch (error) {
         if (process.env.NODE_ENV === 'development')
             console.log(error);
-        return res.status(403).json({message: 'Forbidden'});
+        return res.status(500).json({message: 'Internal server error'});
     }
 }

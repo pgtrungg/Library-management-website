@@ -26,6 +26,10 @@ router.route('/reset-password/:token')
     .post(authController.resetPassword); // POST /api/v2/auth/reset-password/:token - Reset Password (Public)
 
 
+router.route('/activate-account')
+    .post(authController.activateAccount); // POST /api/v2/auth/activate-account/:token (Public)
+
+
 
 
 

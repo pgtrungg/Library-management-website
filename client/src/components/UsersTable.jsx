@@ -1,9 +1,13 @@
 import {useState} from "react";
 import Select from 'react-select';
 import axios from "axios";
+import {useNavigate} from "react-router-dom";
+import {DeleteOutlined} from '@ant-design/icons';
+import Swal from "sweetalert2";
 
 function UsersTable() {
     let [users, setUsers] = useState([]);
+    const navigate = useNavigate();
 
     let [filteredUsers, setFilteredUsers] = useState(
         {
@@ -68,6 +72,33 @@ function UsersTable() {
         } catch (error) {
             console.error(error);
         }
+    }
+    const viewDetail = (id) => {
+        navigate(`/admin/users/${id}`)
+    }
+    const removeUser = (id) => {
+        Swal.fire({
+            title: 'Are you sure?',
+            text: 'You will not be able to recover this user!',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, delete it!',
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+        }).then((result) => {
+            if (result.isConfirmed) {
+                axios.delete(`/users/${id}`)
+                    .then((response) => {
+                        if (response.status === 200) {
+                            setUsers(users.filter((user) => user._id !== id));
+                        }
+                    })
+                    .catch((error) => {
+                        console.error('Error deleting user:', error);
+                    });
+            }
+        }
+        )
     }
 
 
@@ -142,6 +173,7 @@ function UsersTable() {
                         <th>Email</th>
                         <th>Address</th>
                         <th>Role</th>
+                        <th>More details</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -171,6 +203,20 @@ function UsersTable() {
                             <td>
                                 {user.role}
                             </td>
+                            <td>
+                                        <button
+                                            className="underline hover:text-blue-500"
+                                            onClick={() => viewDetail(user._id)}
+                                        >
+                                            View
+                                        </button>
+
+                                    </td>
+                                    <td>
+                                                <button onClick={() => removeUser(user._id)}>
+                                                    <DeleteOutlined />
+                                                </button>
+                                            </td>
                           
                         </tr>
                     ))}
@@ -180,5 +226,6 @@ function UsersTable() {
         </>
     )
 }
+
 
 export default UsersTable;

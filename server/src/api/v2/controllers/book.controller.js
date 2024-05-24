@@ -307,7 +307,7 @@ exports.delete = (req, res) => {
  * Response: Book object || error message
  */
 exports.addReview = (req, res) => {
-
+    console.log(req.body)
     // Validate Request
     if (!req.body.rating) {
         return res.status(400).json({
@@ -315,6 +315,12 @@ exports.addReview = (req, res) => {
         });
     }
     let cleanText = DOMPurify.sanitize(req.body.text);
+    console.log(cleanText)
+    if (cleanText !== req.body.text) {
+        return res.status(201).json({
+            message: "Invalid comment"
+        });
+    }
 
     // Find book and update it with the request body
     let review = new Review({

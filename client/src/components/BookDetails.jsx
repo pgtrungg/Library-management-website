@@ -44,11 +44,14 @@ const BookDetails = () => {
     const handleReviewSubmit = async (e) => {
         e.preventDefault();
         try {
-            const response = await axios.post(`/books/${bookId}/reviews`, newReview, {
-                headers: { Authorization: `Bearer ${user.token}` },
-            });
+            const response = await axios.post(`/books/${bookId}/reviews`, newReview );
+            console.log(response);
+            if (response.status === 201){
+                alert("Invalid comment");
+            }else{
             setReviews([...reviews, response.data]);
             setNewReview({ text: '', rating: 1, username: user.username });
+            }
         } catch (error) {
             console.error('Error adding review:', error);
         }

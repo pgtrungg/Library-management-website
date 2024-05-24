@@ -83,8 +83,8 @@ let signResetToken = (payload) => {
             reject(new Error('No reset token secret provided'));
         }
         const options = {
-            // expires in 1 hour
-            expiresIn: '1h',
+            // expires in 10 minutes
+            expiresIn: '10m',
             issuer: 'localhost'
         };
         jwtHelper.sign({data: payload}, secret, options, (err, token) => {
@@ -122,8 +122,8 @@ let signEmailVerificationToken = (payload) => {
             reject(new Error('No email verification token secret provided'));
         }
         const options = {
-            // expires in 1 year
-            expiresIn: '1y',
+            // expires in 10m
+            expiresIn: '10m',
             issuer: 'localhost'
         };
         jwtHelper.sign({data: payload}, secret, options, (err, token) => {
@@ -137,8 +137,10 @@ let signEmailVerificationToken = (payload) => {
 
 
 let verifyEmailVerificationToken = (token) => {
+    console.log("verifyEmailVerificationToken called" + token)
     return new Promise((resolve, reject) => {
         const secret = process.env.EMAIL_VERIFICATION_TOKEN_SECRET;
+        
         if (!secret) {
             reject(new Error('No email verification token secret provided'));
         }

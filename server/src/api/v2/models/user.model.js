@@ -3,11 +3,10 @@ let mongoose = require('mongoose');
 let userSchema = new mongoose.Schema({
     username: {
         type: String,
-        required: true, 
+        required: true,
     },
     name: {
         type: String,
-        
     },
     password: {
         type: String,
@@ -72,7 +71,15 @@ let userSchema = new mongoose.Schema({
     oldPasswords: {
         type: [String],
         default: []
-    }
+    },
+    devices: {
+        type: [String],
+        default: []
+    },
+    resetPasswordToken: {
+        type: String,
+        required: false
+    },
 }, {
     timestamps: true
 });

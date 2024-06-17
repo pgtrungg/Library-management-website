@@ -6,7 +6,7 @@ import userReducer from './slices/userSlice';
 const store = configureStore({
     reducer: {
         cart: cartReducer,
-        user: userReducer,
+        user: userReducer
     }
 });
 

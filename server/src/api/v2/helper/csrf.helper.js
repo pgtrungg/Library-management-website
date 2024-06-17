@@ -1,7 +1,7 @@
 const Tokens = require('csrf');
 const tokens = new Tokens();
 
-var secret = tokens.secretSync();  
+let secret = tokens.secretSync();
 
 let generateCSRFToken = () => {
     return new Promise((resolve, reject) => {

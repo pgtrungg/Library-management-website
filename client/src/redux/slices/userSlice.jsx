@@ -17,7 +17,7 @@ const userSlice = createSlice({
             localStorage.removeItem('expirationTime');
             Cookies.remove('accessToken');
             Cookies.remove('refreshToken');
-            
+
             return null;
         }
     }

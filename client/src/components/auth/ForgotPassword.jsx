@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import { Link, useNavigate } from 'react-router-dom';
@@ -20,7 +20,7 @@ const ForgotPassword = () => {
                     text: 'A reset password link has been sent to your email.',
                     icon: 'success',
                     confirmButtonText: 'OK'
-                }).then((result) => {
+                }).then(() => {
                     navigate('/login');
                 }
                 );

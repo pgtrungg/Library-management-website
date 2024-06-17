@@ -1,13 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import axios from "axios";
+import Swal from "sweetalert2";
 
 function BorrowsTable() {
     const [borrowings, setBorrowings] = useState([]);
     const [filteredBorrowings, setFilteredBorrowings] = useState({});
     
-    useEffect(() => {
-        filterBorrowings();
-    }, [filteredBorrowings]);
+
 
     const getQuery = () => {
         let query = {};
@@ -17,23 +16,27 @@ function BorrowsTable() {
         if (filteredBorrowings.status) {
             query.status = filteredBorrowings.status;
         }
-        // Add more conditions for other filters as needed
         return query;
     }
 
-    const filterBorrowings = () => {
+    const queryBorrowings = async () => {
         const query = getQuery();
         axios.get('/borrow/admin/all', { params: query })
             .then(response => {
-                console.log(response.data); 
                 if (response.data) {
                     setBorrowings(response.data);
                 }
             })
             .catch(error => {
-                console.error('Error filtering borrowings:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Oops...',
+                    text: 'Something went wrong! error: ' + error,
+                }).then()
             });
     }
+
+    queryBorrowings().then()
 
     return (
         <>
@@ -51,7 +54,7 @@ function BorrowsTable() {
                 </div>
                 {/* Add more filter inputs as needed */}
                 <div className="form-control">
-                    <button className="btn btn-primary" onClick={filterBorrowings}>
+                    <button className="btn btn-primary" onClick={queryBorrowings}>
                         Filter
                     </button>
                 </div>
@@ -65,6 +68,7 @@ function BorrowsTable() {
                         <th>Status</th>
                         <th>Borrow Date</th>
                         <th>Return Date</th>
+                        <th>Actual Return Date</th>
                         {/* Add more table headers for other borrow details */}
                     </tr>
                     </thead>
@@ -76,6 +80,7 @@ function BorrowsTable() {
                             <td>{borrowing.status}</td>
                             <td>{new Date(borrowing.borrow_date).toLocaleDateString()}</td>
                             <td>{new Date(borrowing.return_date).toLocaleDateString()}</td>
+                            <td>{borrowing.actual_return_date ? new Date(borrowing.actual_return_date).toLocaleDateString() : ''}</td>
                             {/* Add more table cells for other borrow details */}
                         </tr>
                     ))}

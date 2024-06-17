@@ -21,10 +21,12 @@ function NavBar() {
                     dispatch(clearCart());
                     navigate('/login');
                 });
-
-
         } catch (error) {
-            console.error(error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Oops...',
+                text: 'Something went wrong! error: ' + error,
+            }).then()
         }
     }
 
@@ -33,63 +35,40 @@ function NavBar() {
     }
     let handleBorrow = async () => {
         if (!user) {
-            await Swal.fire({
-                icon: 'warning',
-                title: 'Please log in to borrow books.',
-                confirmButtonText: 'OK'
-            });
+            alert('Please log in to borrow books.');
             return;
         }
-    
-        const { value: days } = await Swal.fire({
-            title: 'Enter the number of days you want to borrow the books (max 30 days):',
-            input: 'number',
-            inputAttributes: {
-                min: 1,
-                max: 30,
-                step: 1
-            },
-            showCancelButton: true,
-            inputValidator: (value) => {
-                if (!value) {
-                    return 'You need to enter a number of days!';
-                }
-                if (isNaN(value) || value < 1 || value > 30) {
-                    return 'Please enter a valid number of days between 1 and 30.';
-                }
-                return null;
-            }
-        });
-    
-        if (!days) {
+
+        let days = prompt('Enter the number of days you want to borrow the books (max 30 days):');
+        days = parseInt(days);
+
+        if (isNaN(days) || days < 1 || days > 30) {
+            alert('Please enter a valid number of days between 1 and 30.');
             return;
         }
-    
+
         const borrowData = {
             user_id: user._id,
             book_list: cart.map(item => ({ book_id: item._id, quantity: item.quantity })),
-            days: parseInt(days)
+            days: days
         };
-        console.log(borrowData);
-    
+
         try {
             await axios.post('/borrow', borrowData);
             dispatch(clearCart());
-            await Swal.fire({
+            Swal.fire({
                 icon: 'success',
-                title: 'Books borrowed successfully!',
-                confirmButtonText: 'OK'
-            });
+                title: 'Success',
+                text: 'Books borrowed successfully!',
+            }).then();
         } catch (error) {
-            console.error('Error borrowing books:', error);
-            await Swal.fire({
+            Swal.fire({
                 icon: 'error',
-                title: 'Error borrowing books. Please try again.',
-                confirmButtonText: 'OK'
-            });
+                title: 'Oops...',
+                text: 'Something went wrong! error: ' + error,
+            }).then()
         }
     }
-    
 
     return (
         <div className="navbar bg-base-100">

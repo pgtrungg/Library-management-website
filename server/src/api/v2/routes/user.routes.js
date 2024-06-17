@@ -17,6 +17,7 @@ router.route('/:userId/avatar')
 
 router.route('/:userId/password')
     .patch(auth.authMiddleware, userController.changePassword) // PATCH /api/v2/users/:userId/password - Change Password of a User with id (User)
+
 // Admin routes
 router.route('/')
     .get(auth.adminMiddleware, userController.getAllUsers) // GET /api/v2/users - Retrieve all Users from the database (Admin)

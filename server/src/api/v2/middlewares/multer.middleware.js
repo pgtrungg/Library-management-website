@@ -1,6 +1,7 @@
 const multer = require('multer');
 const {validateBufferMIMEType} = require('validate-image-type');
 let fs = require('fs');
+let writeLog = require('../helper/log.helper');
 
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
@@ -30,6 +31,7 @@ const imageFilterMiddleware = async (req, res, next) => {
     if (!validationResult.ok) {
         // Delete file if invalid
         fs.unlinkSync(req.file.path);
+        writeLog.error(`[${req.clientIp}] - [${req.originalUrl}] - [${req.method}] - [${req.protocol}] - Invalid file type`)
         return res.status(400).json({message: 'Invalid file type'});
     }
     next();

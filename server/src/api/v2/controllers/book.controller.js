@@ -11,6 +11,9 @@ const window = new JSDOM('').window;
 // Initialize DOMPurify with the JSDOM window
 const DOMPurify = createDOMPurify(window);
 
+let writeLog = require('../helper/log.helper');
+
+
 /**
  * Book(title, author, description, cover, publication_date, publisher, quantity, language, isbn, average_rating,
  * total_ratings, reviews, categories)
@@ -53,11 +56,13 @@ exports.findAll = (req, res) => {
         .sort({title: 1})
         .select('title author cover publication_date publisher quantity language isbn genre tags average_rating total_ratings')
         .then(books => {
-            res.status(200).json(books);
+            writeLog.info(`[${req.clientIp}] - [Books retrieved successfully!] - [200]`)
+            return res.status(200).json(books);
         })
         .catch(err => {
-            res.status(500).json({
-                message: err.message || "Some error occurred while retrieving books."
+            writeLog.error(`[${req.clientIp}] - [${err}] - [500]`)
+            return res.status(500).json({
+                message: "Some error occurred while retrieving books."
             });
         });
 };
@@ -73,6 +78,7 @@ exports.findAll = (req, res) => {
 exports.create = async (req, res) => {
     // Validate request
     if (!req.body.title) {
+        writeLog.info(`[${req.clientIp}] - [${req.user.email}] - [${req.user.role}] - [Book title is missing] - [400]`)
         return res.status(400).json({
             message: "Book title can not be empty"
         });
@@ -80,18 +86,47 @@ exports.create = async (req, res) => {
 
     // upload cover image
     if (!req.file) {
+        writeLog.info(`[${req.clientIp}] - [${req.user.email}] - [${req.user.role}] - [Book cover image is missing] - [400]`)
         return res.status(400).json({
             message: "Book cover image is required"
         });
     }
 
     // Get categories from the database if they exist get their ids and add them to the book object before saving else
+    let arrCheck = [req.body.title, req.body.author, req.body.description, req.body.publication_date, req.body.publisher, req.body.quantity, req.body.language, req.body.isbn];
+    if (arrCheck.includes(undefined)) {
+        fs.unlinkSync(req.file.path);
+        writeLog.info(`[${req.clientIp}] - [${req.user.email}] - [${req.user.role}] - [Book data is missing] - [400]`)
+        return res.status(400).json({
+            message: "Book data is missing"
+        });
+    }
+    // DOMPurify check for XSS
+    for (let ntc in arrCheck) {
+        let cleanText = DOMPurify.sanitize(ntc);
+        if (cleanText !== ntc) {
+            fs.unlinkSync(req.file.path);
+            writeLog.info(`[${req.clientIp}] - [${req.user.email}] - [${req.user.role}] - [Invalid data] - [201]`)
+            return res.status(201).json({
+                message: "Invalid data"
+            });
+        }
+    }
+    for (let ntc in req.body.categories) {
+        let cleanText = DOMPurify.sanitize(ntc);
+        if (cleanText !== ntc) {
+            fs.unlinkSync(req.file.path);
+            writeLog.info(`[${req.clientIp}] - [${req.user.email}] - [${req.user.role}] - [Invalid data] - [201]`)
+            return res.status(201).json({
+                message: "Invalid data"
+            });
+        }
+    }
     // create them
     let book_data = {
         title: req.body.title,
         author: req.body.author,
         description: req.body.description,
-        // cover: req.file ? req.file.path : 'https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.imdb.com%2Ftitle%2Ftt11206172%2F&psig=AOvVaw2lztlDB21LAbkrjhDZDMUS&ust=1714803217679000&source=images&cd=vfe&opi=89978449&ved=0CBIQjRxqFwoTCOjqhPjp8IUDFQAAAAAdAAAAABAE',
         publication_date: req.body.publication_date,
         publisher: req.body.publisher,
         quantity: req.body.quantity,
@@ -104,47 +139,50 @@ exports.create = async (req, res) => {
     if (req.body.categories) {
         try {
             const categoriesArray = Array.isArray(req.body.categories) ? req.body.categories : [req.body.categories];
-            let categoriesData = await Category.find({ name: { $in: categoriesArray } });
+            let categoriesData = await Category.find({ name: { $in: categoriesArray } }, null, null);
             book_data.categories = categoriesData.map(category => category._id);
             let existingCategoryNames = categoriesData.map(category => category.name);
             let newCategories = categoriesArray.filter(category => !existingCategoryNames.includes(category));
-    
+
             if (newCategories.length > 0) {
                 let createdCategories = await Category.insertMany(newCategories.map(name => ({ name })));
                 book_data.categories.push(...createdCategories.map(category => category._id));
             }
         } catch (err) {
             fs.unlinkSync(req.file.path);
+            writeLog.error(`[${req.clientIp}] - [${req.user.email}] - [${req.user.role}] - [${error}] - [500]`)
             return res.status(500).json({
-                message: err.message || "Some error occurred while creating the Book."
+                message: "Some error occurred while creating the Book."
             });
         }
     }
-        
-    // Upload cover image to cloudinary
-    let cover = await uploadOnCloudinary(req.file.path);
-    // fs.unlinkSync(req.file.path);
-    if (!cover) {
-        // delete uploaded image
-        return res.status(500).json({
-            message: "Some error occurred while creating the Book."
-        });
-    }
-    book_data.cover = cover.url;
 
 
-    // Create a Book
-    const book = new Book(book_data);
 
     // Save Book in the database
     try {
+        // Upload cover image to cloudinary
+        let cover = await uploadOnCloudinary(req.file.path);
+        if (!cover) {
+            // delete uploaded image
+            writeLog.error(`[${req.clientIp}] - [${req.user.email}] - [${req.user.role}] - [Error uploading cover image] - [500]`)
+            return res.status(500).json({
+                message: "Some error occurred while creating the Book."
+            });
+        }
+        book_data.cover = cover.url;
+
+
+        // Create a Book
+        const book = new Book(book_data);
         const savedBook = await book.save();
-        res.status(201).json(savedBook);
+        return res.status(201).json(savedBook);
     } catch (err) {
         // delete uploaded image
         fs.unlinkSync(req.file.path);
-        res.status(500).json({
-            message: err.message || "Some error occurred while creating the Book."
+        writeLog.error(`[${req.clientIp}] - [${req.user.email}] - [${req.user.role}] - [${error}] - [500]`)
+        return res.status(500).json({
+            message: "Some error occurred while creating the Book."
         });
     }
 }
@@ -160,22 +198,21 @@ exports.findOne = (req, res) => {
         .populate('reviews')
         .then(book => {
             if (!book) {
+                writeLog.info(`[${req.clientIp}] - [Book not found with id ${req.params.bookId}] - [404]`)
                 return res.status(404).json({
                     message: "Book not found with id " + req.params.bookId
                 });
             }
-            let a= Category.findById(book.categories[0])
-
-
-
-            res.status(200).json(book);
+            return res.status(200).json(book);
         })
         .catch(err => {
             if (err.kind === 'ObjectId') {
+                writeLog.error(`[${req.clientIp}] - [Error retrieving book with id ${req.params.bookId}] - [500]`)
                 return res.status(404).json({
                     message: "Book not found with id " + req.params.bookId
                 });
             }
+            writeLog.error(`[${req.clientIp}] - [Error retrieving book with id ${req.params.bookId}] - [500]`)
             return res.status(500).json({
                 message: "Error retrieving book with id " + req.params.bookId
             });
@@ -191,13 +228,30 @@ exports.findOne = (req, res) => {
  * Response: Book object || error message
  */
 exports.update = async (req, res) => {
-    console.log(req.body)
     try {
         // Validate Request
         if (!req.body.title) {
+            writeLog.info(`[${req.clientIp}] - [${req.user.email}] - [${req.user.role}] - [Book title is missing] - [400]`)
             return res.status(400).json({
                 message: "Book title can not be empty"
             });
+        }
+
+        let arrCheck = [req.body.title, req.body.author, req.body.description, req.body.publication_date, req.body.publisher, req.body.quantity, req.body.language, req.body.isbn];
+        for (let ntc in arrCheck) {
+            if (arrCheck[ntc] === undefined) {
+                writeLog.info(`[${req.clientIp}] - [${req.user.email}] - [${req.user.role}] - [Book data is missing] - [400]`)
+                return res.status(400).json({
+                    message: "Book data is missing"
+                });
+            }
+            let cleanText = DOMPurify.sanitize(ntc);
+            if (cleanText !== ntc) {
+                writeLog.info(`[${req.clientIp}] - [${req.user.email}] - [${req.user.role}] - [Invalid data] - [201]`)
+                return res.status(201).json({
+                    message: "Invalid data"
+                });
+            }
         }
 
         // Build update object with fields from request body
@@ -211,60 +265,64 @@ exports.update = async (req, res) => {
         if (req.body.quantity) update.quantity = req.body.quantity;
         if (req.body.language) update.language = req.body.language;
         if (req.body.isbn) update.isbn = req.body.isbn;
-        
-
         // Process categories
-        // Process categories
-if (req.body.categories) {
-    try {
-        update.categories_name = req.body.categories;
-        // Ensure categoriesArray is always an array
-        const categoriesArray = Array.isArray(req.body.categories) ? req.body.categories : [req.body.categories];
+        if (req.body.categories) {
+            for (let ntc in req.body.categories) {
+                let cleanText = DOMPurify.sanitize(ntc);
+                if (cleanText !== ntc) {
+                    writeLog.info(`[${req.clientIp}] - [${req.user.email}] - [${req.user.role}] - [Invalid data] - [201]`)
+                    return res.status(201).json({
+                        message: "Invalid data"
+                    });
+                }
+            }
+            try {
+                update.categories_name = req.body.categories;
+                // Ensure categoriesArray is always an array
+                const categoriesArray = Array.isArray(req.body.categories) ? req.body.categories : [req.body.categories];
 
-        // Find categories matching the names in categoriesArray
-        let categoryData = await Category.find({ name: { $in: categoriesArray } }).exec();
+                // Find categories matching the names in categoriesArray
+                let categoryData = await Category.find({name: {$in: categoriesArray}}, null, null);
 
-        // Get category IDs
-        let categoryIds = categoryData.map(data => data._id);
+                // Get category IDs
+                let categoryIds = categoryData.map(data => data._id);
 
-        // Filter out new categories not present in the database
-        let newCategories = categoriesArray.filter(data => !categoryData.map(c => c.name).includes(data));
+                // Filter out new categories not present in the database
+                let newCategories = categoriesArray.filter(data => !categoryData.map(c => c.name).includes(data));
 
-        // If new categories are found, insert them into the database and update categoryIds
-        if (newCategories.length > 0) {
-            let createdCategories = await Category.insertMany(newCategories.map(name => ({ name })));
-            categoryIds.push(...createdCategories.map(category => category._id));
+                // If new categories are found, insert them into the database and update categoryIds
+                if (newCategories.length > 0) {
+                    let createdCategories = await Category.insertMany(newCategories.map(name => ({name})));
+                    categoryIds.push(...createdCategories.map(category => category._id));
+                }
+
+                // Update the categories field in the update object
+                update.categories = categoryIds;
+            } catch (err) {
+                // Handle error
+                writeLog.error(`[${req.clientIp}] - [${req.user.email}] - [${req.user.role}] - [${error}] - [500]`)
+                return res.status(500).json({
+                    message: "Some error occurred while processing categories."
+                });
+            }
         }
-
-        // Update the categories field in the update object
-        update.categories = categoryIds;
-    } catch (err) {
-        // Handle error
-        console.error(err);
-        return res.status(500).json({
-            message: err.message || "Some error occurred while processing categories."
-        });
-    }
-}
-
-        
-
         // Find and update the book
         let updatedBook = await Book.findByIdAndUpdate(req.params.bookId, update, null).exec();
 
         if (!updatedBook) {
+            writeLog.info(`[${req.clientIp}] - [${req.user.email}] - [${req.user.role}] - [Book not found with id ${req.params.bookId}] - [404]`)
             return res.status(404).json({
                 message: "Book not found with id " + req.params.bookId
             });
         }
-
-        res.status(200).json({
+        writeLog.info(`[${req.clientIp}] - [${req.user.email}] - [${req.user.role}] - [Book updated successfully!] - [200]`)
+        return res.status(200).json({
             message: "Book updated successfully!"
         });
     } catch (err) {
-        console.error(err);
-        res.status(500).json({
-            message: err.message || "Some error occurred while updating the Book."
+        writeLog.error(`[${req.clientIp}] - [${req.user.email}] - [${req.user.role}] - [${error}] - [500]`)
+        return res.status(500).json({
+            message: "Some error occurred while updating the Book."
         });
     }
 }
@@ -280,18 +338,22 @@ exports.delete = (req, res) => {
     Book.deleteOne({_id: req.params.bookId})
         .then(book => {
             if (!book) {
+                writeLog.info(`[${req.clientIp}] - [${req.user.email}] - [${req.user.role}] - [Book not found with id ${req.params.bookId}] - [404]`)
                 return res.status(404).json({
                     message: "Book not found with id " + req.params.bookId
                 });
             }
-            res.status(200).json({message: "Book deleted successfully!"});
+            writeLog.info(`[${req.clientIp}] - [${req.user.email}] - [${req.user.role}] - [Book deleted successfully!] - [200]`)
+            return res.status(200).json({message: "Book deleted successfully!"});
         })
         .catch(err => {
             if (err.kind === 'ObjectId' || err.name === 'NotFound') {
+                writeLog.error(`[${req.clientIp}] - [${req.user.email}] - [${req.user.role}] - [Book not found with id ${req.params.bookId}] - [404]`)
                 return res.status(404).json({
                     message: "Book not found with id " + req.params.bookId
                 });
             }
+            writeLog.error(`[${req.clientIp}] - [${req.user.email}] - [${req.user.role}] - [Could not delete book with id ${req.params.bookId}] - [500]`)
             return res.status(500).json({
                 message: "Could not delete book with id " + req.params.bookId
             });
@@ -307,16 +369,18 @@ exports.delete = (req, res) => {
  * Response: Book object || error message
  */
 exports.addReview = (req, res) => {
-    console.log(req.body)
+
     // Validate Request
     if (!req.body.rating) {
+        writeLog.info(`[${req.clientIp}] - [${req.user.email}] - [${req.user.role}] - [Rating is missing] - [400]`)
         return res.status(400).json({
             message: "Rating can not be empty"
         });
     }
     let cleanText = DOMPurify.sanitize(req.body.text);
-    console.log(cleanText)
+    // console.log(cleanText)
     if (cleanText !== req.body.text) {
+        writeLog.info(`[${req.clientIp}] - [${req.user.email}] - [${req.user.role}] - [Invalid comment] - [201]`)
         return res.status(201).json({
             message: "Invalid comment"
         });
@@ -339,21 +403,23 @@ exports.addReview = (req, res) => {
             }, null)
                 .then(book => {
                     if (!book) {
+                        writeLog.info(`[${req.clientIp}] - [${req.user.email}] - [${req.user.role}] - [Book not found with id ${req.params.bookId}] - [404]`)
                         return res.status(404).json({
                             message: "Book not found with id " + req.params.bookId
                         });
                     }
-                    res.status(200).json(review);
+                    writeLog.info(`[${req.clientIp}] - [${req.user.email}] - [${req.user.role}] - [Review added successfully!] - [200]`)
+                    return res.status(200).json(review);
                 })
                 .catch(err => {
-                    if (process.env.NODE_ENV === 'development')
-                        console.log(err);
-                    res.status(500).json('Error updating book with id ' + req.params.bookId);
+                    writeLog.error(`[${req.clientIp}] - [${req.user.email}] - [${req.user.role}] - [Error updating book with id ${req.params.bookId}] - [500] - [${err}]`)
+                    return res.status(500).json('Error updating book with id ' + req.params.bookId);
                 });
         })
         .catch(err => {
-            res.status(500).json({
-                message: err.message || "Some error occurred while adding review."
+            writeLog.error(`[${req.clientIp}] - [${req.user.email}] - [${req.user.role}] - [${err}] - [500]`)
+            return res.status(500).json({
+                message:  "Some error occurred while adding review."
             });
         });
 }
@@ -365,13 +431,15 @@ exports.addReview = (req, res) => {
  * Access: Public
  */
 exports.findAllReviews = (req, res) => {
-    Review.find({book_id: req.params.bookId}, null, null)
+    Review.find({book_id: {"$eq": req.params.bookId}}, null, null)
         .then(reviews => {
-            res.status(200).json(reviews);
+            writeLog.info(`[${req.clientIp}] - [Reviews retrieved successfully!] - [200]`)
+            return res.status(200).json(reviews);
         })
         .catch(err => {
-            res.status(500).json({
-                message: err.message || "Some error occurred while retrieving reviews."
+            writeLog.error(`[${req.clientIp}] - [${err}] - [500]`)
+            return res.status(500).json({
+                message: error || "Some error occurred while retrieving reviews."
             });
         });
 }
@@ -386,16 +454,19 @@ exports.deleteReview = (req, res) => {
     Review.findByIdAndDelete(req.params.reviewId, null)
         .then(review => {
             if (!review) {
+                writeLog.info(`[${req.clientIp}] - [Review not found with id ${req.params.reviewId}] - [404]`)
                 return res.status(404).json({
                     message: "Review not found with id " + req.params.reviewId
                 });
             }
             if (review.user_id !== req.user._id) {
+                writeLog.info(`[${req.clientIp}] - [You are not authorized to delete this review] - [403]`)
                 return res.status(403).json({
                     message: "You are not authorized to delete this review"
                 });
             }
             if (review.book_id !== req.params.bookId) {
+                writeLog.info(`[${req.clientIp}] - [This review does not belong to this book] - [403]`)
                 return res.status(403).json({
                     message: "This review does not belong to this book"
                 });
@@ -406,24 +477,29 @@ exports.deleteReview = (req, res) => {
             }, null)
                 .then(book => {
                     if (!book) {
+                        writeLog.info(`[${req.clientIp}] - [Book not found with id ${req.params.bookId}] - [404]`)
                         return res.status(404).json({
                             message: "Book not found with id " + req.params.bookId
                         });
                     }
-                    res.status(200).json({message: "Review deleted successfully!"});
+                    writeLog.info(`[${req.clientIp}] - [Review deleted successfully!] - [200]`)
+                    return res.status(200).json({message: "Review deleted successfully!"});
                 })
                 .catch(err => {
                     if (process.env.NODE_ENV === 'development')
                         console.log(err);
-                    res.status(500).json('Error updating book with id ' + req.params.bookId);
+                    writeLog.error(`[${req.clientIp}] - [Error updating book with id ${req.params.bookId}] - [500]`)
+                    return res.status(500).json('Error updating book with id ' + req.params.bookId);
                 });
         })
         .catch(err => {
             if (err.kind === 'ObjectId' || err.name === 'NotFound') {
+                writeLog.info(`[${req.clientIp}] - [Review not found with id ${req.params.reviewId}] - [404]`)
                 return res.status(404).json({
                     message: "Review not found with id " + req.params.reviewId
                 });
             }
+            writeLog.error(`[${req.clientIp}] - [Could not delete review with id ${req.params.reviewId}] - [500]`)
             return res.status(500).json({
                 message: "Could not delete review with id " + req.params.reviewId
             });
@@ -441,6 +517,7 @@ exports.deleteReview = (req, res) => {
     Review.findByIdAndDelete(req.params.reviewId, null)
         .then(review => {
             if (!review) {
+                writeLog.info(`[${req.clientIp}] - [Review not found with id ${req.params.reviewId}] - [404]`)
                 return res.status(404).json({
                     message: "Review not found with id " + req.params.reviewId
                 });
@@ -451,11 +528,13 @@ exports.deleteReview = (req, res) => {
             }, null)
                 .then(book => {
                     if (!book) {
+                        writeLog.info(`[${req.clientIp}] - [Book not found with id ${review.book_id}] - [404]`)
                         return res.status(404).json({
                             message: "Book not found with id " + review.book_id
                         });
                     }
-                    res.status(200).json({message: "Review deleted successfully!"});
+                    writeLog.info(`[${req.clientIp}] - [Review deleted successfully!] - [200]`)
+                    return res.status(200).json({message: "Review deleted successfully!"});
                 })
                 .catch(err => {
                     if (process.env.NODE_ENV === 'development')
@@ -465,10 +544,12 @@ exports.deleteReview = (req, res) => {
         })
         .catch(err => {
             if (err.kind === 'ObjectId' || err.name === 'NotFound') {
+                writeLog.info(`[${req.clientIp}] - [Review not found with id ${req.params.reviewId}] - [404]`)
                 return res.status(404).json({
                     message: "Review not found with id " + req.params.reviewId
                 });
             }
+            writeLog.error(`[${req.clientIp}] - [Could not delete review with id ${req.params.reviewId}] - [500]`)
             return res.status(500).json({
                 message: "Could not delete review with id " + req.params.reviewId
             });

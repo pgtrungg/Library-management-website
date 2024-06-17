@@ -1,19 +1,18 @@
 import { useState } from "react";
-import { useDispatch } from 'react-redux';
-import { addBook } from '../redux/slices/cartSlice.jsx';
+import {useDispatch, useSelector} from 'react-redux';
+import { addBook } from '../../redux/slices/cartSlice.jsx';
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import { useSelector } from "react-redux";
 import { ShoppingCartOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import Swal from 'sweetalert2';
 
-function BooksTable() {
+const BooksTable = () => {
     let [books, setBooks] = useState([]);
     let navigate = useNavigate();
     let user = useSelector((state) => state.user);
 
     let [filteredBooks, setFilteredBooks] = useState({});
-    const getQuery = () => {
+    const getQuery = async () => {
         let query = {};
         if (filteredBooks.title) {
             query.title = filteredBooks.title;
@@ -33,37 +32,45 @@ function BooksTable() {
         return query;
     }
 
-    const filterBooks = () => {
+    const filterBooks = async () => {
         let query = getQuery();
         try {
-            axios.get('/books', { params: query })
+            await axios.get('/books', {params: query})
                 .then((response) => {
                     if (response.data)
                         setBooks(response.data);
                 });
         } catch (error) {
-            console.error(error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Oops...',
+                text: 'Something went wrong! error: ' + error,
+            }).then()
         }
     }
 
     if (books.length === 0) {
         let query = getQuery();
-        try {
-            axios.get('/books', { params: query })
+        axios.get('/books', {params: query})
                 .then((response) => {
                     if (response.data.length > 0)
                         setBooks(response.data);
-                });
-        } catch (error) {
-            console.error(error);
-        }
-    }
+                })
+                .catch((error) => {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Oops...',
+                        text: 'Something went wrong! error: ' + error,
+                    }).then()
+                })
+            }
+
+
 
     const dispatch = useDispatch();
 
     const addToCart = async (book) => {
-        console.log(book);
-        const { value: quantity } = await Swal.fire({
+        const {value: quantity} = await Swal.fire({
             title: 'Enter the quantity',
             input: 'number',
             inputAttributes: {
@@ -84,9 +91,8 @@ function BooksTable() {
                 return null;
             }
         });
-        console.log(quantity);
         if (quantity) {
-            let book1 = { ...book };
+            let book1 = {...book};
             book1.quantity = parseInt(quantity, 10);  // Ensure quantity is an integer
             dispatch(addBook(book1));
         }
@@ -110,7 +116,11 @@ function BooksTable() {
                         }
                     })
                     .catch((error) => {
-                        console.error('Error deleting book:', error);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Oops...',
+                            text: 'Something went wrong! error: ' + error,
+                        }).then()
                     });
             }
         });
@@ -130,28 +140,28 @@ function BooksTable() {
             <div className='form-container'>
                 <div className='form-control'>
                     <input type="text" placeholder="Search by title" className="input input-bordered"
-                        value={filteredBooks.title}
-                        onChange={(e) => setFilteredBooks({ ...filteredBooks, title: e.target.value })} />
+                           value={filteredBooks.title}
+                           onChange={(e) => setFilteredBooks({...filteredBooks, title: e.target.value})}/>
                 </div>
                 <div className='form-control'>
                     <input type="text" placeholder="Search by author" className="input input-bordered"
-                        value={filteredBooks.author}
-                        onChange={(e) => setFilteredBooks({ ...filteredBooks, author: e.target.value })} />
+                           value={filteredBooks.author}
+                           onChange={(e) => setFilteredBooks({...filteredBooks, author: e.target.value})}/>
                 </div>
                 <div className='form-control'>
                     <input type="text" placeholder="Search by publisher" className="input input-bordered"
-                        value={filteredBooks.publisher}
-                        onChange={(e) => setFilteredBooks({ ...filteredBooks, publisher: e.target.value })} />
+                           value={filteredBooks.publisher}
+                           onChange={(e) => setFilteredBooks({...filteredBooks, publisher: e.target.value})}/>
                 </div>
                 <div className='form-control'>
                     <input type="text" placeholder="Search by ISBN" className="input input-bordered"
-                        value={filteredBooks.isbn}
-                        onChange={(e) => setFilteredBooks({ ...filteredBooks, isbn: e.target.value })} />
+                           value={filteredBooks.isbn}
+                           onChange={(e) => setFilteredBooks({...filteredBooks, isbn: e.target.value})}/>
                 </div>
                 <div className='form-control'>
                     <input type="text" placeholder="Search by date published" className="input input-bordered"
-                        value={filteredBooks.datePublished}
-                        onChange={(e) => setFilteredBooks({ ...filteredBooks, datePublished: e.target.value })} />
+                           value={filteredBooks.datePublished}
+                           onChange={(e) => setFilteredBooks({...filteredBooks, datePublished: e.target.value})}/>
                 </div>
                 <div className="form-control">
                     <button className="btn btn-primary" onClick={filterBooks}>
@@ -162,19 +172,19 @@ function BooksTable() {
             <div className={'overflow-x-auto'}>
                 <table className="table">
                     <thead>
-                        <tr>
-                            <th>Title</th>
-                            <th>Author</th>
-                            <th>ISBN</th>
-                            <th>Publisher</th>
-                            <th>Date Published</th>
-                            <th>Quantity</th>
-                            <th>More Details</th>
+                    <tr>
+                        <th>Title</th>
+                        <th>Author</th>
+                        <th>ISBN</th>
+                        <th>Publisher</th>
+                        <th>Date Published</th>
+                        <th>Quantity</th>
+                        <th>More Details</th>
 
-                        </tr>
+                    </tr>
                     </thead>
                     <tbody>
-                        {books.map((book) => {
+                    {books.map((book) => {
                             return (
                                 <tr key={book._id}>
                                     <td>{book.title}</td>
@@ -197,19 +207,19 @@ function BooksTable() {
                                     <td>
                                         {/* Add to Cart Button */}
                                         <button onClick={() => addToCart(book)}>
-                                            <ShoppingCartOutlined />
+                                            <ShoppingCartOutlined/>
                                         </button>
                                     </td>
                                     {user && user.role === 'admin' && (
                                         <>
                                             <td>
                                                 <button onClick={() => removeBook(book._id)}>
-                                                    <DeleteOutlined />
+                                                    <DeleteOutlined/>
                                                 </button>
                                             </td>
                                             <td>
                                                 <button onClick={() => editBook(book._id)}>
-                                                    <EditOutlined />
+                                                    <EditOutlined/>
                                                 </button>
                                             </td>
                                         </>
@@ -218,7 +228,7 @@ function BooksTable() {
                                 </tr>
                             )
                         }
-                        )}
+                    )}
                     </tbody>
                 </table>
             </div>

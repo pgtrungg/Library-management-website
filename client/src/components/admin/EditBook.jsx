@@ -1,7 +1,11 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useParams, useNavigate } from 'react-router-dom';
+import Swal from "sweetalert2";
 
-const AddBookForm = () => {
+const EditBook = () => {
+    const { bookId } = useParams();
+    const navigate = useNavigate();
     const [formData, setFormData] = useState({
         title: '',
         author: '',
@@ -12,8 +16,41 @@ const AddBookForm = () => {
         isbn: '',
         quantity: '',
         categories: '',
-        coverImage: null
     });
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        // Fetch the existing book data
+        axios.get(`/books/${bookId}`)
+            .then(response => {
+                const book = response.data;
+                setFormData({
+                    title: book.title,
+                    author: book.author,
+                    description: book.description,
+                    publication_date: book.publication_date ? new Date(book.publication_date).toISOString().split('T')[0] : '',
+                    publisher: book.publisher,
+                    language: book.language,
+                    isbn: book.isbn,
+                    quantity: book.quantity,
+                    categories: book.categories_name,
+                });
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success',
+                    text: 'Book data fetched successfully',
+                }).then()
+                setLoading(false);
+            })
+            .catch(error => {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Oops...',
+                    text: 'Something went wrong! error: ' + error,
+                }).then()
+                setLoading(false);
+            });
+    }, [bookId]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -23,59 +60,36 @@ const AddBookForm = () => {
         }));
     };
 
-    const handleFileChange = (e) => {
-        const file = e.target.files[0];
-        setFormData(prevState => ({
-            ...prevState,
-            coverImage: file
-        }));
-    };
+ 
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
-        const formDataToSend = new FormData();
-        formDataToSend.append('title', formData.title);
-        formDataToSend.append('author', formData.author);
-        formDataToSend.append('description', formData.description);
-        formDataToSend.append('publication_date', formData.publication_date);
-        formDataToSend.append('publisher', formData.publisher);
-        formDataToSend.append('language', formData.language);
-        formDataToSend.append('isbn', formData.isbn);
-        formDataToSend.append('quantity', formData.quantity);
-        formDataToSend.append('categories', formData.categories);
-        formDataToSend.append('cover', formData.coverImage);
-
         try {
-            await axios.post('/books', formDataToSend, {
-                headers: {
-                    'Content-Type': 'multipart/form-data'
-                }
-            });
-            setFormData({
-                title: '',
-                author: '',
-                description: '',
-                publication_date: '',
-                publisher: '',
-                language: '',
-                isbn: '',
-                quantity: '',
-                categories: '',
-                coverImage: null
-            });
-            alert('Book added successfully!');
+            await axios.put(`/books/${bookId}`, formData);
+            Swal.fire({
+                icon: 'success',
+                title: 'Success',
+                text: 'Book updated successfully',
+            }).then()
+
+            navigate('/');
         } catch (error) {
-            console.error('Error adding book:', error);
-            alert('Error adding book. Please try again.');
+            Swal.fire({
+                icon: 'error',
+                title: 'Oops...',
+                text: 'Something went wrong! error: ' + error,
+            }).then()
         }
     };
 
+    if (loading) {
+        return <div>Loading...</div>;
+    }
+
     return (
         <div className="max-w-lg mx-auto p-4 bg-gray-100 rounded-md">
-            <h2 className="text-xl font-bold mb-4">Upload Book Cover and Input Details</h2>
+            <h2 className="text-xl font-bold mb-4">Edit Book Details</h2>
             <form onSubmit={handleSubmit}>
-                {/* Your form inputs */}
                 <div className="mb-4">
                     <label htmlFor="title" className="block mb-1">Title:</label>
                     <input type="text" id="title" name="title" value={formData.title} onChange={handleChange} className="w-full px-3 py-2 border rounded-md" required />
@@ -89,7 +103,7 @@ const AddBookForm = () => {
                     <textarea id="description" name="description" value={formData.description} onChange={handleChange} className="w-full px-3 py-2 border rounded-md" required></textarea>
                 </div>
                 <div className="mb-4">
-                    <label htmlFor="publication_date" className="block mb-1">Publication Date:</label>
+                    <label htmlFor="publication_date" className="block mb-1">Publication Date:</label>                   
                     <input type="date" id="publication_date" name="publication_date" value={formData.publication_date} onChange={handleChange} className="w-full px-3 py-2 border rounded-md" required />
                 </div>
                 <div className="mb-4">
@@ -110,16 +124,14 @@ const AddBookForm = () => {
                 </div>
                 <div className="mb-4">
                     <label htmlFor="categories" className="block mb-1">Categories:</label>
-                    <input type="text" id="categories" name="categories" value={formData.categories} onChange={handleChange} className="w-full px-3 py-2 border rounded-md" required />
+                    <input type="text" id="categories"   name="categories" value={formData.categories} onChange={handleChange} className="w-full px-3 py-2 border rounded-md" required />
                 </div>
-                <div className="mb-4">
-                    <label htmlFor="cover" className="block mb-1">Cover Image:</label>
-                    <input type="file" id="cover" name="cover" onChange={handleFileChange} className="w-full" required />
-                </div>
-                <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">Upload Book</button>
+             
+                <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">Update Book</button>
             </form>
         </div>
     );
 };
 
-export default AddBookForm;
+export default EditBook;
+
